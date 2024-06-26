@@ -14,7 +14,8 @@ from django.views import View
 from django.http import JsonResponse, HttpResponse
 import os
 from django.conf import settings
-import pytz
+from django.utils import timezone
+# import pytz
 import datetime
 import requests
 import random
