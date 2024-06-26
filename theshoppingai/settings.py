@@ -160,8 +160,8 @@ CORS_ALLOW_ALL_ORIGINS = True
 AUTH_USER_MODEL = "auths.CustomUser"
 # AUTH_USER_MODEL = 'account.User'
 
-LOGIN_REDIRECT_URL = "auth"
-LOGOUT_REDIRECT_URL = "auth"
+LOGIN_REDIRECT_URL = "auths"
+LOGOUT_REDIRECT_URL = "auths"
 
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

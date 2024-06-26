@@ -57,7 +57,7 @@ class CustomUser(AbstractUser,TimeStampModel):
     credit = models.BigIntegerField(default=100)
     #Mobile_number = models.IntegerField(default=0)
     #gender = models.CharField(max_length=25, choices=GENDER, null=True, blank=True)
-    profile_photo = models.ImageField(upload_to='profile_pic/', blank=True, null=True) #default='default-user-profile.jpg')
+    # profile_photo = models.ImageField(upload_to='profile_pic/', blank=True, null=True) #default='default-user-profile.jpg')
     stripe_customer_id = models.CharField(max_length=255, blank=True, null=True)  # Added for Stripe
     is_subscribed = models.BooleanField(default=False)  # Added for Stripe
     #membership = models.ForeignKey(Membership, null=True, blank=True, on_delete=models.SET_NULL)  # Added for Stripe
