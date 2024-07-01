@@ -165,8 +165,8 @@ LOGOUT_REDIRECT_URL = "auths"
 
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'server.server'  # GoDaddy SMTP server
+EMAIL_HOST = 'smtp.hostinger.com'  # GoDaddy SMTP server
 EMAIL_PORT = 465  # Use 465 for SSL/TLS
 EMAIL_USE_SSL = True  # Enable SSL/TLS encryption
-EMAIL_HOST_USER = 'email@email.io'  # Your GoDaddy email address
-EMAIL_HOST_PASSWORD = '@password'  # Your GoDaddy email password
+EMAIL_HOST_USER = 'info@theshoppingai.com'  # Your GoDaddy email address
+EMAIL_HOST_PASSWORD = '@Theshoppingai123'  # Your GoDaddy email password

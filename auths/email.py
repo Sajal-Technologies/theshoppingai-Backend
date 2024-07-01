@@ -60,16 +60,16 @@ def send_otp_via_email(email):
                       <div style="width: 100%; max-width: 489px; margin: 0 auto;">
                         <h1 style="margin: 0; font-size: 24px; font-weight: 500; color: #1f1f1f;">Hey User,</h1>
     
-                        <p style="margin: 0; margin-top: 17px; font-weight: 500; letter-spacing: 0.56px;">Thank you for choosing LivingImage. Use the following OTP. OTP is valid for <span style="font-weight: 600; color: #1f1f1f;">5 minutes</span>. Do not share this code with others.</p>
+                        <p style="margin: 0; margin-top: 17px; font-weight: 500; letter-spacing: 0.56px;">Thank you for choosing TheShoppingAI. Use the following OTP. OTP is valid for <span style="font-weight: 600; color: #1f1f1f;">5 minutes</span>. Do not share this code with others.</p>
                         <p style="margin: 0; margin-top: 30px; font-size: 36px; font-weight: 600; letter-spacing: 15px; color: #ba3d4f;"><span style="white-space: nowrap;">{user_obj.verification_code}</span></p>
                       </div>
                     </div>
 
-                    <p style="max-width: 400px; margin: 0 auto; margin-top: 90px; text-align: center; font-weight: 500; color: #8c8c8c;">Need help? Ask at <a href="mailto:support@livingimage.io" style="color: #499fb6; text-decoration: none;">support@livingimage.io</a> or visit our <a href="https://livingimage.io/" target="_blank" style="color: #499fb6; text-decoration: none;">Website</a></p>
+                    <p style="max-width: 400px; margin: 0 auto; margin-top: 90px; text-align: center; font-weight: 500; color: #8c8c8c;">Need help? Ask at <a href="mailto:contact@theshoppingai.com" style="color: #499fb6; text-decoration: none;">contact@theshoppingai.com</a> or visit our <a href="https://theshoppingai.com/" target="_blank" style="color: #499fb6; text-decoration: none;">Website</a></p>
                   </main>
 
                   <footer style="width: 100%; max-width: 490px; margin: 20px auto 0; text-align: center; border-top: 1px solid #e6ebf1;">
-                    <p style="margin: 0; margin-top: 40px; font-size: 16px; font-weight: 600; color: #434343;">Living Image</p>
+                    <p style="margin: 0; margin-top: 40px; font-size: 16px; font-weight: 600; color: #434343;">The Shopping AI</p>
                   </footer>
                 </div>
               </body>

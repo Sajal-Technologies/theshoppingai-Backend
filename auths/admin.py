@@ -11,9 +11,9 @@ class CustomUserAdmin(UserAdmin):
     model = CustomUser
     # list_display = ["email", "username", 'is_user_verified', 'credit']
     list_display = ["email", "id", "username", 'is_user_verified', 'credit']
-    def user_credit(self, obj):
-            return str(obj.user.profile_photo)
-    user_credit.short_description = 'Profile Photo'  # Customize the column header
+    # def user_credit(self, obj):
+    #         return str(obj.user.profile_photo)
+    # user_credit.short_description = 'Profile Photo'  # Customize the column header
 
 
 
