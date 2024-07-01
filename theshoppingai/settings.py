@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-74p_q=o95@ne1i&h+t=wkumu2s$=9b1pi3e_3#^scwdgq28^$3
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['3.230.52.77','127.0.0.1', 'localhost','api.theshoppingai.com']
 
 
 # Application definition
