@@ -31,4 +31,6 @@ urlpatterns = [
     path('api/forgot-password/', ForgotPasswordView.as_view(), name='api-forgotpassword'),    # From Keywordlit Project
     path('api/reset-password/', UserChangePasswordView.as_view(), name='api-resetpassword'),  # Change password is now RESETPASSWORD
     path('api/change-password/', UserModifyPasswordView.as_view(), name='api-changepassword'), # NEW CHANGE PASSOWRD FOR EXISTING USERS
+
+    path('api/search-product/', ProductSearchView.as_view(), name='api-ProductSearchView'), 
 ]

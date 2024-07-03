@@ -338,3 +338,74 @@ class ForgotPasswordView(APIView):
 
 #------------------------------------Forgot Password by Adil---------------------------------------------------------------
     
+
+from selenium.webdriver import Chrome
+import time
+import requests
+from bs4 import BeautifulSoup
+import urllib.parse
+
+
+class ProductSearchView(APIView):   
+    def post(self, request):
+
+        userid = get_user_id_from_token(request)
+        user = CustomUser.objects.filter(id=userid)
+
+        if not user:
+            return Response({"Message":"User not Found!!!!"})
+
+        product = request.data.get('product_name')
+
+        if not product:
+            return Response({'Message': 'Please provide product_name'}, status=status.HTTP_400_BAD_REQUEST)
+
+        product_name = str(product).replace(' ','+')
+        try:
+            url = f"https://www.google.com/search?q={product_name}&sa=X&sca_esv=bb6fb22019ea88f6&sca_upv=1&hl=en&tbm=shop&ei=hBOEZvy0OoWavr0P8rqW6Ak&ved=0ahUKEwj8ht6WzYiHAxUFja8BHXKdBZ0Q4dUDCAg&uact=5&oq=chopping+knife&gs_lp=Egtwcm9kdWN0cy1jYyIOY2hvcHBpbmcga25pZmUyBRAAGIAEMgUQABiABDIFEAAYgAQyBhAAGBYYHjIGEAAYFhgeMgYQABgWGB4yBhAAGBYYHjIGEAAYFhgeMgYQABgWGB4yBhAAGBYYHkibHFCaBliOGnABeACQAQCYAa0BoAHWEKoBBDEuMTW4AQPIAQD4AQGYAhGgAoIRwgIKEAAYgAQYQxiKBZgDAIgGAZIHBDIuMTWgB_BL&sclient=products-cc#spd=14118574038044825156"
+            driver = Chrome()
+            driver.get(url)
+            
+            # time.sleep(3)
+            data = driver.page_source
+            driver.quit()
+            
+            html_content = data
+            
+            # Parse the HTML content
+            soup = BeautifulSoup(html_content, 'html.parser')
+            
+            # Initialize a list to store the product details
+            products = []
+            
+            # Extract product details
+            product_grid = soup.find_all('div', class_='sh-dgr__gr-auto sh-dgr__grid-result')
+            for product in product_grid:
+                product_name = product.find('h3', class_='tAxDx').get_text(strip=True) if product.find('h3', class_='tAxDx') else None
+                # product_title = product_name  # Assuming the name and title are the same
+                
+                price_span = product.find('span', class_='a8Pemb OFFNJ')
+                price = price_span.get_text(strip=True) if price_span else None
+                
+                website_span = product.find('div', class_='aULzUe IuHnof')
+                website_name = website_span.get_text(strip=True) if website_span else None
+                
+                link_tag = product.find('a', class_='shntl')
+                link = link_tag['href'] if link_tag else None
+
+                if link and link.startswith('/url?url='):
+                    parsed_url = urllib.parse.parse_qs(urllib.parse.urlparse(link).query)
+                    link = parsed_url['url'][0] if 'url' in parsed_url else link
+            
+                products.append({
+                    'Product Name': product_name,
+                    # 'Title': product_title,
+                    'Price': price,
+                    'Website Name': website_name,
+                    'Link': link
+                })
+            # return products
+        
+            return Response({'Message': 'Fetch the Product data Successfully', "Product_data" : products}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'Message': f'Unable to fetch the Product data: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
