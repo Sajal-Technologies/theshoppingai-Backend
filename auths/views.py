@@ -208,7 +208,7 @@ class UserLoginView(APIView):
                 except ValidationError as e:
                     return Response({'Message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 #--------------------------If user is not verified then OTP is sent to user-----------------------------------------------------------
-                return Response({'verified' : user.is_user_verified, 'Message':'Verify your account First!', 'Email': user.email}, status=status.HTTP_200_OK)
+                return Response({'verified' : user.is_user_verified, 'Message':'Verify your account First!', 'email': user.email}, status=status.HTTP_200_OK)
         else:
             return Response({'Message':'Email or Password is not Valid'}, status=status.HTTP_404_NOT_FOUND)
 
