@@ -340,6 +340,7 @@ class ForgotPasswordView(APIView):
     
 
 from selenium.webdriver import Chrome
+from selenium.webdriver.chrome.options import Options
 import time
 import requests
 from bs4 import BeautifulSoup
@@ -352,6 +353,16 @@ class ProductSearchView(APIView):
         userid = get_user_id_from_token(request)
         user = CustomUser.objects.filter(id=userid)
 
+        options = Options()
+        options.add_argument("--headless")
+        options.add_argument("window-size=1400,1500")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--no-sandbox")
+        options.add_argument("start-maximized")
+        options.add_argument("enable-automation")
+        options.add_argument("--disable-infobars")
+        options.add_argument("--disable-dev-shm-usage")
+
         if not user:
             return Response({"Message":"User not Found!!!!"})
 
@@ -363,7 +374,7 @@ class ProductSearchView(APIView):
         product_name = str(product).replace(' ','+')
         try:
             url = f"https://www.google.com/search?q={product_name}&sa=X&sca_esv=bb6fb22019ea88f6&sca_upv=1&hl=en&tbm=shop&ei=hBOEZvy0OoWavr0P8rqW6Ak&ved=0ahUKEwj8ht6WzYiHAxUFja8BHXKdBZ0Q4dUDCAg&uact=5&oq=chopping+knife&gs_lp=Egtwcm9kdWN0cy1jYyIOY2hvcHBpbmcga25pZmUyBRAAGIAEMgUQABiABDIFEAAYgAQyBhAAGBYYHjIGEAAYFhgeMgYQABgWGB4yBhAAGBYYHjIGEAAYFhgeMgYQABgWGB4yBhAAGBYYHkibHFCaBliOGnABeACQAQCYAa0BoAHWEKoBBDEuMTW4AQPIAQD4AQGYAhGgAoIRwgIKEAAYgAQYQxiKBZgDAIgGAZIHBDIuMTWgB_BL&sclient=products-cc#spd=14118574038044825156"
-            driver = Chrome()
+            driver = Chrome(options=options)
             driver.get(url)
             
             # time.sleep(3)
