@@ -15,6 +15,9 @@ class CustomUserAdmin(UserAdmin):
     #         return str(obj.user.profile_photo)
     # user_credit.short_description = 'Profile Photo'  # Customize the column header
 
+class oxylab_accountAdmin(admin.ModelAdmin):
+    list_display = ["id", "username", 'status', 'password']
 
 
 admin.site.register(CustomUser, CustomUserAdmin)
+admin.site.register(oxylab_account, oxylab_accountAdmin)

@@ -67,12 +67,17 @@ class UserRegistrationView(APIView):
                 if CustomUser.objects.filter(username=generated_random_username).count() == 0:
                     request.data['username'] = generated_random_username
                     break
+        
+        if not request.data.get('email'):
+            return Response({'Message': 'email field is required'}, status=status.HTTP_400_BAD_REQUEST)
+        email = request.data.get("email")
+        
+
+        if CustomUser.objects.filter(email=email).exists():
+            return Response({'Message': "User with this email already exists. Please Sign-in"}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = UserRegistrationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
-        if not request.data.get('email'):
-            return Response({'Message': 'email field is required'}, status=status.HTTP_400_BAD_REQUEST)
 
         is_superuser = request.data.get('isAdmin', False)
         if is_superuser:
@@ -345,7 +350,7 @@ import time
 import requests
 from bs4 import BeautifulSoup
 import urllib.parse
-
+from urllib.parse import parse_qs, urlparse
 
 class ProductSearchView(APIView):   
     def post(self, request):
@@ -420,3 +425,80 @@ class ProductSearchView(APIView):
             return Response({'Message': 'Fetch the Product data Successfully', "Product_data" : products}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'Message': f'Unable to fetch the Product data: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class oxylabSearchView(APIView):   
+    def post(self, request):
+
+        userid = get_user_id_from_token(request)
+        user = CustomUser.objects.filter(id=userid)
+
+        if not user:
+            return Response({"Message":"User not Found!!!!"})
+
+        query = request.data.get("query")
+
+        if not query:
+            return Response({'Message': 'Please provide query to search'}, status=status.HTTP_400_BAD_REQUEST)
+
+        oxy_account = oxylab_account.objects.get(id=1)
+        username = oxy_account.username
+        password = oxy_account.password
+
+        try:
+            # Structure payload.
+            payload = {
+                'source': 'google_shopping_search',
+                'domain': 'com',
+                'query': str(query),
+                'pages': 4,
+                'parse': True,
+                'context': [
+                    {'key': 'sort_by', 'value': 'pd'},
+                    {'key': 'min_price', 'value': 1},
+                ],
+            }
+
+            # Get response.
+            response = requests.request(
+                'POST',
+                'https://realtime.oxylabs.io/v1/queries',
+                auth=(f'{username}', f'{password}'),
+                json=payload,
+            )
+
+            # Print prettified response to stdout.
+            data =response.json()
+            shopping_data=[]
+            # for i in range(len(data['results'])):
+            #     shopping_data.extend(data['results'][i]['content']['results']['organic'])
+
+            # for result in data['results']:
+            #     for item in result['content']['results']['organic']:
+                    
+            #         item['url'] = self.fix_url(item['url'])
+            #         if 'merchant' in item and 'url' in item['merchant']:
+            #             item['merchant']['url'] = self.fix_url(item['merchant']['url'])
+            #         shopping_data.append(item)
+
+            for i in range(len(data['results'])):
+                organic_results = data['results'][i]['content']['results']['organic']
+                for item in organic_results:
+                    # Fix the main URL
+                    # item['url'] = self.fix_url(item['url'])
+                    # Fix the merchant URL if it exists
+                    if 'merchant' in item and 'url' in item['merchant']:
+                        item['merchant']['url'] = self.fix_url(item['merchant']['url'])
+                    shopping_data.append(item)
+            
+            return Response({'Message': 'Fetch the Product data Successfully', "Product_data" : shopping_data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'Message': f'Unable to fetch the Product data: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+    @staticmethod
+    def fix_url(encoded_url):
+        parsed_url = urlparse(encoded_url)
+        query_params = parse_qs(parsed_url.query)
+        if 'url' in query_params:
+            return query_params['url'][0]
+        return encoded_url

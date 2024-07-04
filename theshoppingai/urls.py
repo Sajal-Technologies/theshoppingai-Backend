@@ -33,4 +33,6 @@ urlpatterns = [
     path('api/change-password/', UserModifyPasswordView.as_view(), name='api-changepassword'), # NEW CHANGE PASSOWRD FOR EXISTING USERS
 
     path('api/search-product/', ProductSearchView.as_view(), name='api-ProductSearchView'), 
+
+    path('api/oxy-search-product/', oxylabSearchView.as_view(), name='api-oxylabSearchView'), 
 ]

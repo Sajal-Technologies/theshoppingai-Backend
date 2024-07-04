@@ -78,6 +78,17 @@ class CustomUser(AbstractUser,TimeStampModel):
         "Does the user have permissions to view the app `app_label`?"
         # Simplest possible answer: Yes, always
         return True 
+    
+class oxylab_account(TimeStampModel):
+    STATUS = (
+        ('ACTIVE','ACTIVE'),
+        ('INACTIVE','INACTIVE'),
+    )
+    username = models.CharField(max_length=100)
+    password = models.CharField(max_length=100)
+    busy = models.BooleanField(default=False)
+    status = models.CharField(max_length=25,choices=STATUS,default='ACTIVE')
+
 #-----------------------------------------------------Code BY Adil-------------------------------------------------------------
 
 
