@@ -447,12 +447,14 @@ class oxylabSearchView(APIView):
         except oxylab_account.DoesNotExist:
             return Response({'Message': 'Error in oxylabs credential '}, status=status.HTTP_400_BAD_REQUEST)
 
+        query_main = str(query).replace(" ","+")
+
         try:
             # Structure payload.
             payload = {
                 'source': 'google_shopping_search',
                 'domain': 'com',
-                'query': str(query),
+                'query': query_main,
                 'pages': 4,
                 'parse': True,
                 'context': [
