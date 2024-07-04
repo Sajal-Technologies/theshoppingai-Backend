@@ -440,9 +440,12 @@ class oxylabSearchView(APIView):
         if not query:
             return Response({'Message': 'Please provide query to search'}, status=status.HTTP_400_BAD_REQUEST)
 
-        oxy_account = oxylab_account.objects.get(id=1)
-        username = oxy_account.username
-        password = oxy_account.password
+        try:
+            oxy_account = oxylab_account.objects.get(id=1)
+            username = oxy_account.username
+            password = oxy_account.password
+        except oxylab_account.DoesNotExist:
+            return Response({'Message': 'Error in oxylabs credential '}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             # Structure payload.
