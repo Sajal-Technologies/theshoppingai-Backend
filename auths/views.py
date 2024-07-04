@@ -140,7 +140,7 @@ class UserEmailVerificationView(APIView):
                 return Response({'Message': 'Entered Verification code is incorrect.'}, status=status.HTTP_400_BAD_REQUEST)
         except CustomUser.DoesNotExist:
             # If email is not in records, prompt user to register first
-            return Response({'Message': 'Email not in records. Please register first.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'Message': 'You are not registered with us, please sign up.'}, status=status.HTTP_400_BAD_REQUEST)
 
 #---------------------------------------------------------UserEmailVerification By Adil--------------------------------------------------------
  
@@ -161,7 +161,7 @@ class ResendOTPView(APIView):
             send_otp_via_email(email)
             return Response({'Message': 'New verification code sent successfully.'}, status=status.HTTP_200_OK)
         except CustomUser.DoesNotExist:
-            return Response({'Message': 'Email not found in records. Register First'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'Message': 'You are not registered with us, please sign up.'}, status=status.HTTP_404_NOT_FOUND)
 
 
 #---------------------------------------------------------Resend OTP APY by ADIL---------------------------------------------------------------
@@ -185,7 +185,7 @@ class UserLoginView(APIView):
             user = CustomUser.objects.get(email=email)
         except CustomUser.DoesNotExist:
             # If the email is not found in records, return a 404 NotFound response
-            return Response({'Message': 'Email not in record. Register First!'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'Message': 'You are not registered with us, please sign up.'}, status=status.HTTP_404_NOT_FOUND)
 
         if user.check_password(password)  :
             if user.is_user_verified:
