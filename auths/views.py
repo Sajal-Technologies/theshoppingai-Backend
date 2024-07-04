@@ -469,29 +469,38 @@ class oxylabSearchView(APIView):
                 json=payload,
             )
 
+            time.sleep(2)
+
             # Print prettified response to stdout.
             data =response.json()
             shopping_data=[]
-            # for i in range(len(data['results'])):
-            #     shopping_data.extend(data['results'][i]['content']['results']['organic'])
 
-            # for result in data['results']:
-            #     for item in result['content']['results']['organic']:
-                    
-            #         item['url'] = self.fix_url(item['url'])
-            #         if 'merchant' in item and 'url' in item['merchant']:
-            #             item['merchant']['url'] = self.fix_url(item['merchant']['url'])
-            #         shopping_data.append(item)
 
             for i in range(len(data['results'])):
                 organic_results = data['results'][i]['content']['results']['organic']
                 for item in organic_results:
-                    # Fix the main URL
-                    # item['url'] = self.fix_url(item['url'])
-                    # Fix the merchant URL if it exists
-                    if 'merchant' in item and 'url' in item['merchant']:
-                        item['merchant']['url'] = self.fix_url(item['merchant']['url'])
+                    try:
+                        # Fix the main URL
+                        # item['url'] = self.fix_url(item['url'])
+                        # Fix the merchant URL if it exists
+                        if 'merchant' in item and 'url' in item['merchant']:
+                            item['merchant']['url'] = self.fix_url(item['merchant']['url'])
+                    except Exception as e:
+                        print(f"Error parsing URL for item: {e}")
+                        # If there is an error, leave the URL as it is
                     shopping_data.append(item)
+
+
+
+            # for i in range(len(data['results'])):
+            #     organic_results = data['results'][i]['content']['results']['organic']
+            #     for item in organic_results:
+            #         # Fix the main URL
+            #         # item['url'] = self.fix_url(item['url'])
+            #         # Fix the merchant URL if it exists
+            #         if 'merchant' in item and 'url' in item['merchant']:
+            #             item['merchant']['url'] = self.fix_url(item['merchant']['url'])
+            #         shopping_data.append(item)
             
             return Response({'Message': 'Fetch the Product data Successfully', "Product_data" : shopping_data}, status=status.HTTP_200_OK)
         except Exception as e:
