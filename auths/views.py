@@ -324,7 +324,7 @@ class ForgotPasswordView(APIView):
             user = CustomUser.objects.get(email=email)
         except CustomUser.DoesNotExist:
             # If user is not in records, prompt user to register first
-            return Response({'Message': 'User not in records. Register first.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'Message': 'You are not registered with us, please sign up.'}, status=status.HTTP_400_BAD_REQUEST)
 
         # Generate a verification code
         verification_code = random.randint(100000, 999999)
