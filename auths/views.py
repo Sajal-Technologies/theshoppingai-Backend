@@ -207,6 +207,12 @@ class UserLoginView(APIView):
         password = serializer.data.get('password')
         #user = CustomUser.objects.get(email = email)
 
+        if not request.data.get('email') or not email:
+            return Response({"errors": {"email": ["This is required field*"]}},status=status.HTTP_400_BAD_REQUEST)
+
+        if not request.data.get('password') or not password:
+            return Response({"errors": {"password": ["This is required field*"]}}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             user = CustomUser.objects.get(email=email)
         except CustomUser.DoesNotExist:
