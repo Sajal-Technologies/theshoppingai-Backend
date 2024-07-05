@@ -314,7 +314,7 @@ class UserChangePasswordView(APIView):
 
 
 
-
+from django.core.validators import validate_email
 
 
 #---------------------------------Forgot Password by Adil--------------------------------------------------------------------
@@ -324,6 +324,13 @@ class ForgotPasswordView(APIView):
         email = request.data.get('email')
         if not email:
             return Response({'Message': 'Please provide the Email'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validate email format
+        try:
+            validate_email(email)
+        except ValidationError:
+            return Response({'Message': 'Please provide a valid Email'}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             # Check if user exists in records
             user = CustomUser.objects.get(email=email)
@@ -503,6 +510,7 @@ class oxylabSearchView(APIView):
             #         if 'merchant' in item and 'url' in item['merchant']:
             #             item['merchant']['url'] = self.fix_url(item['merchant']['url'])
             #         shopping_data.append(item)
+            print(response.text)
             
             return Response({'Message': 'Fetch the Product data Successfully', "Product_data" : shopping_data}, status=status.HTTP_200_OK)
         except Exception as e:
