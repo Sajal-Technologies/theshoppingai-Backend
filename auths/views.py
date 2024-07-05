@@ -163,6 +163,11 @@ class ResendOTPView(APIView):
                 {"errors": {"email": ["This is required field*"]}},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        
+        try:
+            validate_email(email)
+        except ValidationError:
+            return Response({"errors": {"email": ["Enter a valid email address."]}}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             user = CustomUser.objects.get(email=email)
@@ -222,7 +227,14 @@ class UserLoginView(APIView):
 #--------------------------If user is not verified then OTP is sent to user-----------------------------------------------------------
                 return Response({'verified' : user.is_user_verified, 'Message':'Verify your account First!', 'email': user.email}, status=status.HTTP_200_OK)
         else:
-            return Response({'Message':'Email or Password is not Valid'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({
+                                "errors": {
+                                    "password": [
+                                        'Password is not Valid.'
+                                    ]
+                                }
+                            }, status=status.HTTP_404_NOT_FOUND)
+            # return Response({'Message':'Password is not Valid'}, status=status.HTTP_404_NOT_FOUND)
 
 class RefreshTokenView(APIView):
     """
