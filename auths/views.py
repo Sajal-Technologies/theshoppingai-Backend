@@ -116,8 +116,17 @@ class UserEmailVerificationView(APIView):
         email = request.data.get('email')
         verification_code = request.data.get('verification_code')
         # Check if required fields are provided
-        if not email or not verification_code:
-            return Response({'Message': 'Please provide Email and Verification code'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not request.data.get('email') or not email:
+            return Response({"errors": {"email": ["This is required field*"]}},status=status.HTTP_400_BAD_REQUEST)
+
+        if not verification_code:
+            return Response({"errors": {"verification_code": ["This is required field*"]}}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            validate_email(email)
+        except ValidationError:
+            return Response({"errors": {"email": ["Enter a valid email address."]}}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             user = CustomUser.objects.get(email=email)
@@ -264,6 +273,25 @@ class UserModifyPasswordView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, format=None):
+
+        if not request.data.get('old_password'):
+            return Response({
+                    "errors": {
+                        "old_password": [
+                            "This is required field*"
+                        ]
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not request.data.get('new_password'):
+            return Response({
+                    "errors": {
+                        "new_password": [
+                            "This is required field*"
+                        ]
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
+
         serializer = UserModifyPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
