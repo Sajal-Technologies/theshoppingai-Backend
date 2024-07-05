@@ -329,7 +329,19 @@ class ForgotPasswordView(APIView):
         try:
             validate_email(email)
         except ValidationError:
-            return Response({'Message': 'Please provide a valid Email'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                # {'Message': 'Please provide a valid Email'
+                             
+                             {
+                                "errors": {
+                                    "email": [
+                                        "Enter a valid email address."
+                                    ]
+                                }
+                            }
+
+                            #  }
+                             , status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         try:
             # Check if user exists in records
