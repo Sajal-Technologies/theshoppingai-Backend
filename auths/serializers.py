@@ -19,7 +19,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
       def validate(self, attrs):
         password = attrs.get('password')
         #password2 = attrs.get('password2')
-        if len(password) <= 7: raise serializers.ValidationError("Password's Length should be minimum 8 ")
+        if len(password) <= 7: raise serializers.ValidationError("password length must be minimum 8 characters.")
         
         return attrs
 
@@ -66,6 +66,10 @@ class UserChangePasswordSerializer(serializers.Serializer):
 
         if password != password2:
             raise serializers.ValidationError("Password and Confirm Password don't match")
+        
+        # Check if the new password is at least 8 characters long
+        if len(password) < 8:
+            raise serializers.ValidationError("password length must be minimum 8 characters.")
 
         return attrs
 
@@ -94,6 +98,10 @@ class UserModifyPasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError("Old password is required.")
         if not new_password:
             raise serializers.ValidationError("New password is required.")
+        
+        # Check if the new password is at least 8 characters long
+        if len(new_password) < 8:
+            raise serializers.ValidationError("password length must be minimum 8 characters.")
 
         return attrs
     
