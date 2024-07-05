@@ -336,6 +336,24 @@ class UserChangePasswordView(APIView):
                         ]
                     }
                 }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not new_password:
+            return Response({
+                    "errors": {
+                        "new_password": [
+                            "This is required field*"
+                        ]
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not verification_code:
+            return Response({
+                    "errors": {
+                        "verification_code": [
+                            "This is required field*"
+                        ]
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
 
         if not email or not verification_code or not new_password:
             return Response({'Message': 'Please provide the Email, Verification code and New Password'}, status=status.HTTP_400_BAD_REQUEST)
