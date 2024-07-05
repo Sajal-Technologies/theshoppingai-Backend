@@ -19,7 +19,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
       def validate(self, attrs):
         password = attrs.get('password')
         #password2 = attrs.get('password2')
-        if len(password) <= 7: raise serializers.ValidationError("password length must be minimum 8 characters.")
+        if len(password) <= 7: 
+            errors = "password length must be minimum 8 characters."
+            raise serializers.ValidationError({"password":[errors]})
         
         return attrs
 
@@ -69,7 +71,8 @@ class UserChangePasswordSerializer(serializers.Serializer):
         
         # Check if the new password is at least 8 characters long
         if len(password) < 8:
-            raise serializers.ValidationError("password length must be minimum 8 characters.")
+            errors = "password length must be minimum 8 characters."
+            raise serializers.ValidationError({"password":[errors]})
 
         return attrs
 
@@ -94,14 +97,29 @@ class UserModifyPasswordSerializer(serializers.Serializer):
         new_password = attrs.get('new_password')
 
         # Check if both old and new passwords are provided
+        # if not old_password:
+        #     raise serializers.ValidationError("Old password is required.")
+        # if not new_password:
+        #     raise serializers.ValidationError("New password is required.")
+        # errors = {}
+        # # Check if the new password is at least 8 characters long
+        # if len(new_password) < 8:
+        #     raise serializers.ValidationError("password length must be minimum 8 characters.")
+
+        # Check if both old and new passwords are provided
+        errors=''
         if not old_password:
-            raise serializers.ValidationError("Old password is required.")
+            errors = "Old password is required."
+            raise serializers.ValidationError({"errors":{"password":errors}})
         if not new_password:
-            raise serializers.ValidationError("New password is required.")
-        
-        # Check if the new password is at least 8 characters long
-        if len(new_password) < 8:
-            raise serializers.ValidationError("password length must be minimum 8 characters.")
+            errors = "New password is required."
+            raise serializers.ValidationError({"errors":{"password":errors}})
+        elif len(new_password) < 8:
+            errors= "Password length must be minimum 8 characters."
+            raise serializers.ValidationError({"errors":{"password":[errors]}})
+
+        # if errors:
+        #     raise serializers.ValidationError({"errors":{"password":errors}})
 
         return attrs
     

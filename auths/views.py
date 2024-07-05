@@ -69,7 +69,9 @@ class UserRegistrationView(APIView):
                     break
         
         if not request.data.get('email'):
-            return Response({'Message': 'email field is required'}, status=status.HTTP_400_BAD_REQUEST)
+            # return Response({'Message': 'email field is required'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"errors": {"email": ["This is required field*"]}},status=status.HTTP_400_BAD_REQUEST)
         email = request.data.get("email")
         
 
@@ -154,8 +156,13 @@ class UserEmailVerificationView(APIView):
 class ResendOTPView(APIView):
     def post(self, request):
         email = request.data.get('email')
+        # if not email:
+        #     return Response({'Message': 'Please provide an email address.'}, status=status.HTTP_400_BAD_REQUEST)
         if not email:
-            return Response({'Message': 'Please provide an email address.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"errors": {"email": ["This is required field*"]}},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         try:
             user = CustomUser.objects.get(email=email)
@@ -255,11 +262,35 @@ class UserModifyPasswordView(APIView):
 
         # Check if the old password matches the user's current password
         if not user.check_password(old_password):
-            return Response({'Message': 'Old password is incorrect.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                                            {
+                                "errors": {
+                                    "password": [
+                                        'Old password is incorrect.'
+                                    ]
+                                }
+                            }
+
+                # {'Message': 'Old password is incorrect.'}
+                            
+                            , status=status.HTTP_400_BAD_REQUEST)
 
         # Check if the old and new passwords are the same
         if old_password == new_password:
-            return Response({'Message': 'New password must be different from the old password.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                            {
+                                            "errors": {
+                                                "password": [
+                                                    'New password must be different from the old password.'
+                                                ]
+                                            }
+                                        }
+                
+                
+                # {'Message': 'New password must be different from the old password.'}
+                
+                
+                , status=status.HTTP_400_BAD_REQUEST)
 
         # Change the user's password
         user.set_password(new_password)
@@ -284,6 +315,16 @@ class UserChangePasswordView(APIView):
         new_password = request.data.get('new_password')
 
         # Check if required fields are provided
+
+        if not email:
+            return Response({
+                    "errors": {
+                        "email": [
+                            "This is required field*"
+                        ]
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
+
         if not email or not verification_code or not new_password:
             return Response({'Message': 'Please provide the Email, Verification code and New Password'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -322,8 +363,14 @@ from django.core.validators import validate_email
 class ForgotPasswordView(APIView):
     def post(self, request):
         email = request.data.get('email')
+        # if not email:
+        #     return Response({'Message': 'Please provide the Email'}, status=status.HTTP_400_BAD_REQUEST)
+        
         if not email:
-            return Response({'Message': 'Please provide the Email'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"errors": {"email": ["This is required field*"]}},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
         # Validate email format
         try:
