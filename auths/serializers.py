@@ -73,6 +73,10 @@ class UserChangePasswordSerializer(serializers.Serializer):
         if len(password) <= 8:
             errors = "password length should be more than 8 characters."
             raise serializers.ValidationError({"password":[errors]})
+        
+        if len(password2) <= 8:
+            errors = "password length should be more than 8 characters."
+            raise serializers.ValidationError({"password":[errors]})
 
         return attrs
 
