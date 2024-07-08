@@ -412,6 +412,15 @@ class UserChangePasswordView(APIView):
                     }
                 }, status=status.HTTP_400_BAD_REQUEST)
         
+        if len(new_password) <=8:
+            return Response({
+                    "errors": {
+                        "password": [
+                            "password length should be more than 8 characters."
+                        ]
+                    }
+                }, status=status.HTTP_400_BAD_REQUEST)
+
         if not verification_code:
             return Response({
                     "errors": {
