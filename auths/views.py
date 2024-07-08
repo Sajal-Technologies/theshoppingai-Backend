@@ -272,12 +272,11 @@ class UserLoginView(APIView):
                 return Response({'verified' : user.is_user_verified, 'Message':'Verify your account First!', 'email': user.email}, status=status.HTTP_200_OK)
         else:
             return Response({
-                                "errors": {
-                                    "password": [
-                                        'Password is not Valid.'
-                                    ]
+                                    "Message": 
+                                        'Sorry, your password was incorrect. Please double-check your password.'
+                                    
                                 }
-                            }, status=status.HTTP_404_NOT_FOUND)
+                            , status=status.HTTP_404_NOT_FOUND)
             # return Response({'Message':'Password is not Valid'}, status=status.HTTP_404_NOT_FOUND)
 
 class RefreshTokenView(APIView):
