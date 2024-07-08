@@ -81,6 +81,10 @@ class UserRegistrationView(APIView):
             # return Response({'Message': 'email field is required'}, status=status.HTTP_400_BAD_REQUEST)
             return Response(
                 {"errors": {"password": ["The Password is Required"]}},status=status.HTTP_400_BAD_REQUEST)
+        if not request.data.get('name'):
+            # return Response({'Message': 'email field is required'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"errors": {"name": ["The Name is Required"]}},status=status.HTTP_400_BAD_REQUEST)
 
         email = request.data.get("email")
         
@@ -167,7 +171,7 @@ class UserEmailVerificationView(APIView):
                 return Response({'token':token,'verified' : user.is_user_verified, 'Message':'Email verified successfully.', "membership_id":None, "membership":None, "membership_expiry_date":None, "subscription_status":user.is_subscribed, "stripe_customer_id":user.stripe_customer_id}, status=status.HTTP_200_OK)
                 # return Response({'token':token,'Message': 'Email verified successfully.'}, status=status.HTTP_200_OK)
             else:
-                return Response({'Message': 'Entered Verification code is incorrect.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'Message': 'Entered Verification code is incorrect.'}, status=status.HTTP_401_UNAUTHORIZED)
         except CustomUser.DoesNotExist:
             # If email is not in records, prompt user to register first
             return Response({'Message': 'You are not registered with us, please sign up.'}, status=status.HTTP_404_NOT_FOUND)
@@ -422,7 +426,7 @@ class UserChangePasswordView(APIView):
 
          # Check if verification code is a valid number
         if not verification_code.isdigit():
-            return Response({'Message': 'Invalid Verification Code.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'Message': 'Invalid Verification Code.'}, status=status.HTTP_401_UNAUTHORIZED)
 
         try:
             user = CustomUser.objects.get(email=email, verification_code=verification_code)
