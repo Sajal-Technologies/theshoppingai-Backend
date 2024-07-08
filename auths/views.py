@@ -71,7 +71,7 @@ class UserRegistrationView(APIView):
         
         if not request.data.get('email') and not request.data.get('password'):
             return Response(
-                {"errors": {"email": ["The Email address and Password is Required"]}},status=status.HTTP_400_BAD_REQUEST)
+                {"Message": "The Email address and Password is Required"},status=status.HTTP_400_BAD_REQUEST)
 
         if not request.data.get('email'):
             # return Response({'Message': 'email field is required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -129,7 +129,7 @@ class UserEmailVerificationView(APIView):
 
         if not request.data.get('email') and not request.data.get('verification_code'):
             return Response(
-                {"errors": {"email": ["The Email address and verification_code is Required"]}},status=status.HTTP_400_BAD_REQUEST)
+                {"Message": "The Email address and verification_code is Required"},status=status.HTTP_400_BAD_REQUEST)
 
         if not request.data.get('email') or not email:
             return Response({"errors": {"email": ["The Email Address is Required"]}},status=status.HTTP_400_BAD_REQUEST)
@@ -218,7 +218,7 @@ class UserLoginView(APIView):
 
         if not request.data.get('email') and not request.data.get('password'):
             return Response(
-                {"errors": {"email": ["The Email address and Password is Required"]}},status=status.HTTP_400_BAD_REQUEST)
+                {"Message": "The Email address and Password is Required"},status=status.HTTP_400_BAD_REQUEST)
         
         if not request.data.get('email'):
             # return Response({'Message': 'email field is required'}, status=status.HTTP_400_BAD_REQUEST)
