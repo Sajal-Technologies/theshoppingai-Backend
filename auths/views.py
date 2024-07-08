@@ -19,6 +19,7 @@ from django.utils import timezone
 import datetime
 import requests
 import random
+from django.core.validators import validate_email
 # Create your views here.
 
 
@@ -68,15 +69,24 @@ class UserRegistrationView(APIView):
                     request.data['username'] = generated_random_username
                     break
         
+        if not request.data.get('email') and not request.data.get('password'):
+            return Response(
+                {"errors": {"email": ["The Email address and Password is Required"]}},status=status.HTTP_400_BAD_REQUEST)
+
         if not request.data.get('email'):
             # return Response({'Message': 'email field is required'}, status=status.HTTP_400_BAD_REQUEST)
             return Response(
-                {"errors": {"email": ["This is required field*"]}},status=status.HTTP_400_BAD_REQUEST)
+                {"errors": {"email": ["The Email Address is Required"]}},status=status.HTTP_400_BAD_REQUEST)
+        if not request.data.get('password'):
+            # return Response({'Message': 'email field is required'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"errors": {"password": ["The Password is Required"]}},status=status.HTTP_400_BAD_REQUEST)
+
         email = request.data.get("email")
         
 
         if CustomUser.objects.filter(email=email).exists():
-            return Response({'Message': "User with this email already exists. Please Sign-in"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'Message': "User with this email address is already registered. Please Sign-in"}, status=status.HTTP_409_CONFLICT)
 
         serializer = UserRegistrationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -117,11 +127,15 @@ class UserEmailVerificationView(APIView):
         verification_code = request.data.get('verification_code')
         # Check if required fields are provided
 
+        if not request.data.get('email') and not request.data.get('verification_code'):
+            return Response(
+                {"errors": {"email": ["The Email address and verification_code is Required"]}},status=status.HTTP_400_BAD_REQUEST)
+
         if not request.data.get('email') or not email:
-            return Response({"errors": {"email": ["This is required field*"]}},status=status.HTTP_400_BAD_REQUEST)
+            return Response({"errors": {"email": ["The Email Address is Required"]}},status=status.HTTP_400_BAD_REQUEST)
 
         if not verification_code:
-            return Response({"errors": {"verification_code": ["This is required field*"]}}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"errors": {"verification_code": ["The verification_code is Required"]}}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             validate_email(email)
@@ -156,7 +170,7 @@ class UserEmailVerificationView(APIView):
                 return Response({'Message': 'Entered Verification code is incorrect.'}, status=status.HTTP_400_BAD_REQUEST)
         except CustomUser.DoesNotExist:
             # If email is not in records, prompt user to register first
-            return Response({'Message': 'You are not registered with us, please sign up.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'Message': 'You are not registered with us, please sign up.'}, status=status.HTTP_403_FORBIDDEN)
 
 #---------------------------------------------------------UserEmailVerification By Adil--------------------------------------------------------
  
@@ -169,7 +183,7 @@ class ResendOTPView(APIView):
         #     return Response({'Message': 'Please provide an email address.'}, status=status.HTTP_400_BAD_REQUEST)
         if not email:
             return Response(
-                {"errors": {"email": ["This is required field*"]}},
+                {"errors": {"email": ["The Email Address is Required"]}},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -187,7 +201,7 @@ class ResendOTPView(APIView):
             send_otp_via_email(email)
             return Response({'Message': 'New verification code sent successfully.'}, status=status.HTTP_200_OK)
         except CustomUser.DoesNotExist:
-            return Response({'Message': 'You are not registered with us, please sign up.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'Message': 'You are not registered with us, please sign up.'}, status=status.HTTP_403_FORBIDDEN)
 
 
 #---------------------------------------------------------Resend OTP APY by ADIL---------------------------------------------------------------
@@ -201,6 +215,27 @@ class UserLoginView(APIView):
     """
     renderer_classes = [UserRenderer]
     def post(self, request, format=None):
+
+        if not request.data.get('email') and not request.data.get('password'):
+            return Response(
+                {"errors": {"email": ["The Email address and Password is Required"]}},status=status.HTTP_400_BAD_REQUEST)
+        
+        if not request.data.get('email'):
+            # return Response({'Message': 'email field is required'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"errors": {"email": ["The Email Address is Required"]}},status=status.HTTP_400_BAD_REQUEST)
+        
+        if not request.data.get('password'):
+            # return Response({'Message': 'email field is required'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"errors": {"password": ["The Password is Required"]}},status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            validate_email(request.data.get('email'))
+        except ValidationError:
+            return Response({"errors": {"email": ["Enter a valid email address."]}}, status=status.HTTP_400_BAD_REQUEST)
+
+
         serializer = UserLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         email = serializer.data.get('email')
@@ -211,7 +246,7 @@ class UserLoginView(APIView):
             user = CustomUser.objects.get(email=email)
         except CustomUser.DoesNotExist:
             # If the email is not found in records, return a 404 NotFound response
-            return Response({'Message': 'You are not registered with us, please sign up.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'Message': 'You are not registered with us, please sign up.'}, status=status.HTTP_403_FORBIDDEN)
 
         if user.check_password(password)  :
             if user.is_user_verified:
@@ -360,7 +395,7 @@ class UserChangePasswordView(APIView):
             return Response({
                     "errors": {
                         "email": [
-                            "This is required field*"
+                            "The Email Address is Required"
                         ]
                     }
                 }, status=status.HTTP_400_BAD_REQUEST)
@@ -369,7 +404,7 @@ class UserChangePasswordView(APIView):
             return Response({
                     "errors": {
                         "new_password": [
-                            "This is required field*"
+                            "The Password is Required"
                         ]
                     }
                 }, status=status.HTTP_400_BAD_REQUEST)
@@ -378,7 +413,7 @@ class UserChangePasswordView(APIView):
             return Response({
                     "errors": {
                         "verification_code": [
-                            "This is required field*"
+                            "The Verification Code is Required"
                         ]
                     }
                 }, status=status.HTTP_400_BAD_REQUEST)
@@ -396,7 +431,7 @@ class UserChangePasswordView(APIView):
             user.verification_code = verification_code# Extra Code added to change the code after Process because same code will be used multiple times.
             user.save()# Extra Code added to change the code after Process because same code will be used multiple times.
         except CustomUser.DoesNotExist:
-            return Response({'Message': 'Invalid email or verification code.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'Message': 'Invalid email or verification code.'}, status=status.HTTP_401_UNAUTHORIZED)
 
         serializer = UserChangePasswordSerializer(instance=user, data={'password': new_password, 'password2': new_password})
         try:
@@ -413,7 +448,6 @@ class UserChangePasswordView(APIView):
 
 
 
-from django.core.validators import validate_email
 
 
 #---------------------------------Forgot Password by Adil--------------------------------------------------------------------
@@ -426,7 +460,7 @@ class ForgotPasswordView(APIView):
         
         if not email:
             return Response(
-                {"errors": {"email": ["This is required field*"]}},
+                {"errors": {"email": ["The Email Address is Required"]}},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -453,7 +487,7 @@ class ForgotPasswordView(APIView):
             user = CustomUser.objects.get(email=email)
         except CustomUser.DoesNotExist:
             # If user is not in records, prompt user to register first
-            return Response({'Message': 'You are not registered with us, please sign up.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'Message': 'You are not registered with us, please sign up.'}, status=status.HTTP_403_FORBIDDEN)
 
         # Generate a verification code
         verification_code = random.randint(100000, 999999)
