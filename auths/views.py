@@ -20,6 +20,8 @@ import datetime
 import requests
 import random
 from django.core.validators import validate_email
+import threading
+from queue import Queue
 # Create your views here.
 
 
@@ -522,264 +524,16 @@ from bs4 import BeautifulSoup
 import urllib.parse
 from urllib.parse import parse_qs, urlparse
 
-# class ProductSearchView(APIView):   
-#     def post(self, request):
-
-#         userid = get_user_id_from_token(request)
-#         user = CustomUser.objects.filter(id=userid)
-
-#         options = Options()
-#         options.add_argument("--headless")
-#         options.add_argument("window-size=1400,1500")
-#         options.add_argument("--disable-gpu")
-#         options.add_argument("--no-sandbox")
-#         options.add_argument("start-maximized")
-#         options.add_argument("enable-automation")
-#         options.add_argument("--disable-infobars")
-#         options.add_argument("--disable-dev-shm-usage")
-
-#         if not user:
-#             return Response({"Message":"User not Found!!!!"})
-
-#         product = request.data.get('product_name')
-
-#         if not product:
-#             return Response({'Message': 'Please provide product_name'}, status=status.HTTP_400_BAD_REQUEST)
-
-#         product_name = str(product).replace(' ','+')
-#         try:
-#             url = f"https://www.google.com/search?q={product_name}&sa=X&sca_esv=bb6fb22019ea88f6&sca_upv=1&hl=en&tbm=shop&ei=hBOEZvy0OoWavr0P8rqW6Ak&ved=0ahUKEwj8ht6WzYiHAxUFja8BHXKdBZ0Q4dUDCAg&uact=5&oq=chopping+knife&gs_lp=Egtwcm9kdWN0cy1jYyIOY2hvcHBpbmcga25pZmUyBRAAGIAEMgUQABiABDIFEAAYgAQyBhAAGBYYHjIGEAAYFhgeMgYQABgWGB4yBhAAGBYYHjIGEAAYFhgeMgYQABgWGB4yBhAAGBYYHkibHFCaBliOGnABeACQAQCYAa0BoAHWEKoBBDEuMTW4AQPIAQD4AQGYAhGgAoIRwgIKEAAYgAQYQxiKBZgDAIgGAZIHBDIuMTWgB_BL&sclient=products-cc#spd=14118574038044825156"
-#             driver = Chrome(options=options)
-#             driver.get(url)
-            
-#             # time.sleep(3)
-#             data = driver.page_source
-#             driver.quit()
-            
-#             html_content = data
-            
-#             # Parse the HTML content
-#             soup = BeautifulSoup(html_content, 'html.parser')
-            
-#             # Initialize a list to store the product details
-#             products = []
-            
-#             # Extract product details
-#             product_grid = soup.find_all('div', class_='sh-dgr__gr-auto sh-dgr__grid-result')
-#             for product in product_grid:
-#                 product_name = product.find('h3', class_='tAxDx').get_text(strip=True) if product.find('h3', class_='tAxDx') else None
-#                 # product_title = product_name  # Assuming the name and title are the same
-                
-#                 price_span = product.find('span', class_='a8Pemb OFFNJ')
-#                 price = price_span.get_text(strip=True) if price_span else None
-                
-#                 website_span = product.find('div', class_='aULzUe IuHnof')
-#                 website_name = website_span.get_text(strip=True) if website_span else None
-                
-#                 link_tag = product.find('a', class_='shntl')
-#                 link = link_tag['href'] if link_tag else None
-
-#                 if link and link.startswith('/url?url='):
-#                     parsed_url = urllib.parse.parse_qs(urllib.parse.urlparse(link).query)
-#                     link = parsed_url['url'][0] if 'url' in parsed_url else link
-            
-#                 products.append({
-#                     'Product Name': product_name,
-#                     # 'Title': product_title,
-#                     'Price': price,
-#                     'Website Name': website_name,
-#                     'Link': link
-#                 })
-#             # return products
-        
-#             return Response({'Message': 'Fetch the Product data Successfully', "Product_data" : products}, status=status.HTTP_200_OK)
-#         except Exception as e:
-#             return Response({'Message': f'Unable to fetch the Product data: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-# class ProductSearchView(APIView):
-#     def fetch_html_content(self, url, options):
-#         driver = Chrome(options=options)
-#         driver.get(url)
-#         data = driver.page_source
-#         driver.quit()
-#         return data
-
-#     def parse_product_details(self, html_content):
-#         soup = BeautifulSoup(html_content, 'html.parser')
-#         products = []
-
-#         product_grid = soup.find_all('div', class_='sh-dgr__gr-auto sh-dgr__grid-result')
-#         for product in product_grid:
-#             product_name = product.find('h3', class_='tAxDx').get_text(strip=True) if product.find('h3', class_='tAxDx') else None
-#             price_span = product.find('span', class_='a8Pemb OFFNJ')
-#             price = price_span.get_text(strip=True) if price_span else None
-#             website_span = product.find('div', class_='aULzUe IuHnof')
-#             website_name = website_span.get_text(strip=True) if website_span else None
-#             link_tag = product.find('a', class_='shntl')
-#             link = link_tag['href'] if link_tag else None
-
-#             if link and link.startswith('/url?url='):
-#                 parsed_url = urllib.parse.parse_qs(urllib.parse.urlparse(link).query)
-#                 link = parsed_url['url'][0] if 'url' in parsed_url else link
-            
-#             products.append({
-#                 'Product Name': product_name,
-#                 'Price': price,
-#                 'Website Name': website_name,
-#                 'Link': link
-#             })
-
-#         return products
-
-#     def post(self, request):
-#         userid = get_user_id_from_token(request)
-#         user = CustomUser.objects.filter(id=userid)
-
-#         options = Options()
-#         options.add_argument("--headless")
-#         options.add_argument("window-size=1400,1500")
-#         options.add_argument("--disable-gpu")
-#         options.add_argument("--no-sandbox")
-#         options.add_argument("start-maximized")
-#         options.add_argument("enable-automation")
-#         options.add_argument("--disable-infobars")
-#         options.add_argument("--disable-dev-shm-usage")
-
-#         if not user:
-#             return Response({"Message": "User not Found!!!!"})
-
-#         product = request.data.get('product_name')
-
-#         if not product:
-#             return Response({'Message': 'Please provide product_name'}, status=status.HTTP_400_BAD_REQUEST)
-
-#         product_name = str(product).replace(' ', '+')
-        
-#         try:
-#             all_products = []
-#             for pge in range(0, 241, 60):
-#                 url = f"https://www.google.com/search?q={product_name}&sca_esv=0835a04e1987451a&sca_upv=1&hl=en-GB&psb=1&tbs=vw:d&tbm=shop&ei=PtyLZqe-L52qseMP_e2qoAk&start={pge}&sa=N&ved=0ahUKEwin1bPLuZeHAxUdVWwGHf22CpQ4eBDy0wMI7w0&biw=1536&bih=730&dpr=1.25"
-#                 html_content = self.fetch_html_content(url, options)
-#                 products = self.parse_product_details(html_content)
-#                 all_products.extend(products)
-
-#             if all_products:
-#                 return Response({'Message': 'Fetch the Product data Successfully', "Product_data": all_products}, status=status.HTTP_200_OK)
-#             else:
-#                 return Response({'Message': 'No products found'}, status=status.HTTP_404_NOT_FOUND)
-
-#         except Exception as e:
-#             return Response({'Message': f'Unable to fetch the Product data: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-
-
-# class ProductSearchView(APIView):
-#     def fetch_html_content(self, url, options):
-#         driver = Chrome(options=options)
-#         driver.get(url)
-#         data = driver.page_source
-#         driver.quit()
-#         return data
-
-#     def parse_product_details(self, html_content):
-#         soup = BeautifulSoup(html_content, 'html.parser')
-#         products = []
-
-#         product_grid = soup.find_all('div', class_='sh-dgr__gr-auto sh-dgr__grid-result')
-#         for product in product_grid:
-#             product_name = product.find('h3', class_='tAxDx').get_text(strip=True) if product.find('h3', class_='tAxDx') else None
-#             price_span = product.find('span', class_='a8Pemb OFFNJ')
-#             price = price_span.get_text(strip=True) if price_span else None
-#             website_span = product.find('div', class_='aULzUe IuHnof')
-#             website_name = website_span.get_text(strip=True) if website_span else None
-#             # Extract ratings
-#             rating_span = product.find('span', class_='Rsc7Yb')
-#             rating = rating_span.get_text(strip=True) if rating_span else None
-            
-#             # Extract review count
-#             # review_count_span = product.find('span', class_='qSSQfd uqAnbd')
-#             # review_count = review_count_span.get_text(strip=True) if review_count_span else None
-
-#             # review_count_span = soup.find('span', class_='QIrs8')
-#             # review_count = review_count_span.text if review_count_span else None
-
-#             # Extract review count
-#             review_count_span = rating_span.find_next_sibling('div', class_='qSSQfd uqAnbd').next_sibling if rating_span else None
-#             review_count = review_count_span.get_text(strip=True) if review_count_span else None
-
-#             link_tag = product.find('a', class_='shntl')
-#             link = link_tag['href'] if link_tag else None
-
-#             if link and link.startswith('/url?url='):
-#                 parsed_url = urllib.parse.parse_qs(urllib.parse.urlparse(link).query)
-#                 link = parsed_url['url'][0] if 'url' in parsed_url else link
-            
-#             products.append({
-#                 'Product Name': product_name,
-#                 'Price': price,
-#                 'Website Name': website_name,
-#                 'Link': link,
-#                 "Ratings":rating,
-#                 "Review Count":review_count
-#             })
-
-#         return products
-
-#     def post(self, request):
-#         userid = get_user_id_from_token(request)
-#         user = CustomUser.objects.filter(id=userid)
-
-#         options = Options()
-#         options.add_argument("--headless")
-#         options.add_argument("window-size=1400,1500")
-#         options.add_argument("--disable-gpu")
-#         options.add_argument("--no-sandbox")
-#         options.add_argument("start-maximized")
-#         options.add_argument("enable-automation")
-#         options.add_argument("--disable-infobars")
-#         options.add_argument("--disable-dev-shm-usage")
-
-#         if not user:
-#             return Response({"Message": "User not Found!!!!"})
-
-#         product = request.data.get('product_name')
-
-#         if not product:
-#             return Response({'Message': 'Please provide product_name'}, status=status.HTTP_400_BAD_REQUEST)
-
-#         product_name = str(product).replace(' ', '+')
-        
-#         retries = 3
-#         for attempt in range(retries):
-#             try:
-#                 all_products = []
-#                 for pge in range(0, 51, 60):
-#                     url = f"https://www.google.com/search?q={product_name}&sca_esv=0835a04e1987451a&sca_upv=1&hl=en-GB&psb=1&tbs=vw:d&tbm=shop&ei=PtyLZqe-L52qseMP_e2qoAk&start={pge}&sa=N&ved=0ahUKEwin1bPLuZeHAxUdVWwGHf22CpQ4eBDy0wMI7w0&biw=1536&bih=730&dpr=1.25"
-#                     html_content = self.fetch_html_content(url, options)
-#                     products = self.parse_product_details(html_content)
-#                     all_products.extend(products)
-
-#                 if all_products:
-#                     return Response({'Message': 'Fetch the Product data Successfully', "Product_data": all_products}, status=status.HTTP_200_OK)
-#                 else:
-#                     print(f"Attempt {attempt + 1}: Products list is empty, retrying...")
-#                     time.sleep(3)  # Wait before retrying
-
-#             except Exception as e:
-#                 print(f"Attempt {attempt + 1}: Error occurred: {str(e)}")
-#                 time.sleep(3)  # Wait before retrying
-
-#         return Response({'Message': 'Failed to fetch product data after multiple attempts'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
 class ProductSearchView(APIView):
-    def fetch_html_content(self, url, options):
-        driver = Chrome(options=options)
-        driver.get(url)
-        data = driver.page_source
-        driver.quit()
-        return data
+    def fetch_html_content(self, url, options, queue):
+        try:
+            driver = Chrome(options=options)
+            driver.get(url)
+            data = driver.page_source
+            driver.quit()
+            queue.put(data)
+        except Exception as e:
+            queue.put(None)
 
     def parse_product_details(self, html_content):
         soup = BeautifulSoup(html_content, 'html.parser')
@@ -842,7 +596,7 @@ class ProductSearchView(APIView):
             return Response({'Message': 'Please provide product_name'}, status=status.HTTP_400_BAD_REQUEST)
 
         product_name = str(product).replace(' ', '+')
-        
+
         # Get filter parameters from the request
         on_sale = request.data.get('on_sale')
         ppr_min = request.data.get('ppr_min')
@@ -851,7 +605,6 @@ class ProductSearchView(APIView):
         ship_speed = request.data.get('ship_speed')
         free_shipping = request.data.get('free_shipping')
         
-
         filters = []
 
         if on_sale:
@@ -861,21 +614,36 @@ class ProductSearchView(APIView):
         if avg_rating:
             filters.append(f'avg_rating:{avg_rating}')
         if ship_speed:
-            filters.append(f'shipspeed:{ship_speed}')
+            filters.append(f'shipspped:{ship_speed}')
         if free_shipping:
             filters.append('ship:1')
 
         filter_string = ','.join(filters)
+        
+        def fetch_page(pge, queue):
+            url = f"https://www.google.com/search?q={product_name}&sca_esv=0835a04e1987451a&sca_upv=1&hl=en-GB&psb=1&tbs=vw:d,{filter_string}&tbm=shop&ei=PtyLZqe-L52qseMP_e2qoAk&start={pge}&sa=N&ved=0ahUKEwin1bPLuZeHAxUdVWwGHf22CpQ4eBDy0wMI7w0&biw=1536&bih=730&dpr=1.25"
+            self.fetch_html_content(url, options, queue)
 
         retries = 3
         for attempt in range(retries):
             try:
                 all_products = []
+                threads = []
+                queue = Queue()
+
                 for pge in range(0, 241, 60):
-                    url = f"https://www.google.com/search?q={product_name}&sca_esv=0835a04e1987451a&sca_upv=1&hl=en-GB&psb=1&tbs=vw:d,{filter_string}&tbm=shop&ei=PtyLZqe-L52qseMP_e2qoAk&start={pge}&sa=N&ved=0ahUKEwin1bPLuZeHAxUdVWwGHf22CpQ4eBDy0wMI7w0&biw=1536&bih=730&dpr=1.25"
-                    html_content = self.fetch_html_content(url, options)
-                    products = self.parse_product_details(html_content)
-                    all_products.extend(products)
+                    thread = threading.Thread(target=fetch_page, args=(pge, queue))
+                    threads.append(thread)
+                    thread.start()
+
+                for thread in threads:
+                    thread.join()
+
+                while not queue.empty():
+                    html_content = queue.get()
+                    if html_content:
+                        products = self.parse_product_details(html_content)
+                        all_products.extend(products)
 
                 if all_products:
                     return Response({'Message': 'Fetch the Product data Successfully', "Product_data": all_products}, status=status.HTTP_200_OK)
@@ -890,109 +658,54 @@ class ProductSearchView(APIView):
         return Response({'Message': 'Failed to fetch product data after multiple attempts'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-# class ProductSearchView(APIView):   
-#     def post(self, request):
-#         def fetch_product_data(url):
-#             driver = Chrome(options=options)
-#             driver.get(url)
-#             # time.sleep(3)
-#             data = driver.page_source
-#             driver.quit()
-#             return data
 
-#         userid = get_user_id_from_token(request)
-#         user = CustomUser.objects.filter(id=userid)
 
-#         options = Options()
-#         options.add_argument("--headless")
-#         options.add_argument("window-size=1400,1500")
-#         options.add_argument("--disable-gpu")
-#         options.add_argument("--no-sandbox")
-#         options.add_argument("start-maximized")
-#         options.add_argument("enable-automation")
-#         options.add_argument("--disable-infobars")
-#         options.add_argument("--disable-dev-shm-usage")
-
-#         if not user:
-#             return Response({"Message": "User not Found!!!!"})
-
-#         product = request.data.get('product_name')
-
-#         if not product:
-#             return Response({'Message': 'Please provide product_name'}, status=status.HTTP_400_BAD_REQUEST)
-
-#         product_name = str(product).replace(' ', '+')
-#         url = f"https://www.google.com/search?q={product_name}&sa=X&sca_esv=bb6fb22019ea88f6&sca_upv=1&hl=en&tbm=shop&ei=hBOEZvy0OoWavr0P8rqW6Ak&ved=0ahUKEwj8ht6WzYiHAxUFja8BHXKdBZ0Q4dUDCAg&uact=5&oq=chopping+knife&gs_lp=Egtwcm9kdWN0cy1jYyIOY2hvcHBpbmcga25pZmUyBRAAGIAEMgUQABiABDIFEAAYgAQyBhAAGBYYHjIGEAAYFhgeMgYQABgWGB4yBhAAGBYYHjIGEAAYFhgeMgYQABgWGB4yBhAAGBYYHkibHFCaBliOGnABeACQAQCYAa0BoAHWEKoBBDEuMTW4AQPIAQD4AQGYAhGgAoIRwgIKEAAYgAQYQxiKBZgDAIgGAZIHBDIuMTWgB_BL&sclient=products-cc#spd=14118574038044825156"
-
-#         retries = 3
-#         for attempt in range(retries):
-#             try:
-#                 html_content = fetch_product_data(url)
-#                 soup = BeautifulSoup(html_content, 'lxml')
-                
-#                 products = []
-#                 product_grid = soup.find_all('div', class_='sh-dgr__gr-auto sh-dgr__grid-result')
-#                 for product in product_grid:
-#                     product_name = product.find('h3', class_='tAxDx').get_text(strip=True) if product.find('h3', class_='tAxDx') else None
-#                     price_span = product.find('span', class_='a8Pemb OFFNJ')
-#                     price = price_span.get_text(strip=True) if price_span else None
-#                     website_span = product.find('div', class_='aULzUe IuHnof')
-#                     website_name = website_span.get_text(strip=True) if website_span else None
-#                     link_tag = product.find('a', class_='shntl')
-#                     link = link_tag['href'] if link_tag else None
-
-#                     if link and link.startswith('/url?url='):
-#                         parsed_url = urllib.parse.parse_qs(urllib.parse.urlparse(link).query)
-#                         link = parsed_url['url'][0] if 'url' in parsed_url else link
-                    
-#                     products.append({
-#                         'Product Name': product_name,
-#                         'Price': price,
-#                         'Website Name': website_name,
-#                         'Link': link
-#                     })
-
-#                 if products:
-#                     return Response({'Message': 'Fetch the Product data Successfully', "Product_data": products}, status=status.HTTP_200_OK)
-#                 else:
-#                     print("Products list is empty, Need to retry")
-#                     time.sleep(3)  # Wait before retrying
-
-#             except Exception as e:
-#                 if attempt == retries - 1:
-#                     return Response({'Message': f'Unable to fetch the Product data: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-#         return Response({'Message': 'Failed to fetch product data after multiple attempts'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-# import concurrent.futures
 
 # class ProductSearchView(APIView):
-#     def fetch_product_data(self, url, options):
+#     def fetch_html_content(self, url, options):
 #         driver = Chrome(options=options)
 #         driver.get(url)
 #         data = driver.page_source
 #         driver.quit()
 #         return data
 
-#     def parse_single_product(self, product):
-#         product_name = product.find('h3', class_='tAxDx').get_text(strip=True) if product.find('h3', class_='tAxDx') else None
-#         price_span = product.find('span', class_='a8Pemb OFFNJ')
-#         price = price_span.get_text(strip=True) if price_span else None
-#         website_span = product.find('div', class_='aULzUe IuHnof')
-#         website_name = website_span.get_text(strip=True) if website_span else None
-#         link_tag = product.find('a', class_='shntl')
-#         link = link_tag['href'] if link_tag else None
+#     def parse_product_details(self, html_content):
+#         soup = BeautifulSoup(html_content, 'html.parser')
+#         products = []
 
-#         if link and link.startswith('/url?url='):
-#             parsed_url = urllib.parse.parse_qs(urllib.parse.urlparse(link).query)
-#             link = parsed_url['url'][0] if 'url' in parsed_url else link
+#         product_grid = soup.find_all('div', class_='sh-dgr__gr-auto sh-dgr__grid-result')
+#         for product in product_grid:
+#             product_name = product.find('h3', class_='tAxDx').get_text(strip=True) if product.find('h3', class_='tAxDx') else None
+#             price_span = product.find('span', class_='a8Pemb OFFNJ')
+#             price = price_span.get_text(strip=True) if price_span else None
+#             website_span = product.find('div', class_='aULzUe IuHnof')
+#             website_name = website_span.get_text(strip=True) if website_span else None
 
-#         return {
-#             'Product Name': product_name,
-#             'Price': price,
-#             'Website Name': website_name,
-#             'Link': link
-#         }
+#             # Extract ratings
+#             rating_span = product.find('span', class_='Rsc7Yb')
+#             rating = rating_span.get_text(strip=True) if rating_span else None
+
+#             # Extract review count
+#             review_count_span = rating_span.find_next_sibling('div', class_='qSSQfd uqAnbd').next_sibling if rating_span else None
+#             review_count = review_count_span.get_text(strip=True) if review_count_span else None
+
+#             link_tag = product.find('a', class_='shntl')
+#             link = link_tag['href'] if link_tag else None
+
+#             if link and link.startswith('/url?url='):
+#                 parsed_url = urllib.parse.parse_qs(urllib.parse.urlparse(link).query)
+#                 link = parsed_url['url'][0] if 'url' in parsed_url else link
+            
+#             products.append({
+#                 'Product Name': product_name,
+#                 'Price': price,
+#                 'Website Name': website_name,
+#                 'Link': link,
+#                 "Rating" : rating,
+#                 "Review Counts" : review_count
+#             })
+
+#         return products
 
 #     def post(self, request):
 #         userid = get_user_id_from_token(request)
@@ -1017,23 +730,54 @@ class ProductSearchView(APIView):
 #             return Response({'Message': 'Please provide product_name'}, status=status.HTTP_400_BAD_REQUEST)
 
 #         product_name = str(product).replace(' ', '+')
-#         url = f"https://www.google.com/search?q={product_name}&sa=X&sca_esv=bb6fb22019ea88f6&sca_upv=1&hl=en&tbm=shop&ei=hBOEZvy0OoWavr0P8rqW6Ak&ved=0ahUKEwj8ht6WzYiHAxUFja8BHXKdBZ0Q4dUDCAg&uact=5&oq=chopping+knife&gs_lp=Egtwcm9kdWN0cy1jYyIOY2hvcHBpbmcga25pZmUyBRAAGIAEMgUQABiABDIFEAAYgAQyBhAAGBYYHjIGEAAYFhgeMgYQABgWGB4yBhAAGBYYHjIGEAAYFhgeMgYQABgWGB4yBhAAGBYYHkibHFCaBliOGnABeACQAQCYAa0BoAHWEKoBBDEuMTW4AQPIAQD4AQGYAhGgAoIRwgIKEAAYgAQYQxiKBZgDAIgGAZIHBDIuMTWgB_BL&sclient=products-cc#spd=14118574038044825156"
+        
+#         # Get filter parameters from the request
+#         on_sale = request.data.get('on_sale')
+#         ppr_min = request.data.get('ppr_min')
+#         ppr_max = request.data.get('ppr_max')
+#         avg_rating = request.data.get('avg_rating')
+#         ship_speed = request.data.get('ship_speed')
+#         free_shipping = request.data.get('free_shipping')
+        
 
-#         try:
-#             html_content = self.fetch_product_data(url, options)
-#             soup = BeautifulSoup(html_content, 'lxml')
-#             product_grid = soup.find_all('div', class_='sh-dgr__gr-auto sh-dgr__grid-result')
+#         filters = []
 
-#             with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-#                 products = list(executor.map(self.parse_single_product, product_grid))
+#         if on_sale:
+#             filters.append('sales:1')
+#         if ppr_min and ppr_max:
+#             filters.append(f'price:1,ppr_min:{ppr_min},ppr_max:{ppr_max}')
+#         if avg_rating:
+#             filters.append(f'avg_rating:{avg_rating}')
+#         if ship_speed:
+#             filters.append(f'shipspeed:{ship_speed}')
+#         if free_shipping:
+#             filters.append('ship:1')
 
-#             if products:
-#                 return Response({'Message': 'Fetch the Product data Successfully', "Product_data": products}, status=status.HTTP_200_OK)
-#             else:
-#                 return Response({'Message': 'No products found'}, status=status.HTTP_404_NOT_FOUND)
+#         filter_string = ','.join(filters)
 
-#         except Exception as e:
-#             return Response({'Message': f'Unable to fetch the Product data: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#         retries = 3
+#         for attempt in range(retries):
+#             try:
+#                 all_products = []
+#                 for pge in range(0, 241, 60):
+#                     url = f"https://www.google.com/search?q={product_name}&sca_esv=0835a04e1987451a&sca_upv=1&hl=en-GB&psb=1&tbs=vw:d,{filter_string}&tbm=shop&ei=PtyLZqe-L52qseMP_e2qoAk&start={pge}&sa=N&ved=0ahUKEwin1bPLuZeHAxUdVWwGHf22CpQ4eBDy0wMI7w0&biw=1536&bih=730&dpr=1.25"
+#                     html_content = self.fetch_html_content(url, options)
+#                     products = self.parse_product_details(html_content)
+#                     all_products.extend(products)
+
+#                 if all_products:
+#                     return Response({'Message': 'Fetch the Product data Successfully', "Product_data": all_products}, status=status.HTTP_200_OK)
+#                 else:
+#                     print(f"Attempt {attempt + 1}: Products list is empty, retrying...")
+#                     time.sleep(3)  # Wait before retrying
+
+#             except Exception as e:
+#                 print(f"Attempt {attempt + 1}: Error occurred: {str(e)}")
+#                 time.sleep(3)  # Wait before retrying
+
+#         return Response({'Message': 'Failed to fetch product data after multiple attempts'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 
 
 
