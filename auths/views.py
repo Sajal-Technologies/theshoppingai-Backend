@@ -871,7 +871,7 @@ class ProductSearchView(APIView):
         for attempt in range(retries):
             try:
                 all_products = []
-                for pge in range(0, 41, 60):
+                for pge in range(0, 241, 60):
                     url = f"https://www.google.com/search?q={product_name}&sca_esv=0835a04e1987451a&sca_upv=1&hl=en-GB&psb=1&tbs=vw:d,{filter_string}&tbm=shop&ei=PtyLZqe-L52qseMP_e2qoAk&start={pge}&sa=N&ved=0ahUKEwin1bPLuZeHAxUdVWwGHf22CpQ4eBDy0wMI7w0&biw=1536&bih=730&dpr=1.25"
                     html_content = self.fetch_html_content(url, options)
                     products = self.parse_product_details(html_content)
