@@ -586,6 +586,24 @@ class ProductSearchView(APIView):
         options.add_argument("enable-automation")
         options.add_argument("--disable-infobars")
         options.add_argument("--disable-dev-shm-usage")
+        # options.add_argument("--disable-extensions")
+        # options.add_argument("--disable-popup-blocking")
+        # options.add_argument("--disable-notifications")
+        # options.add_argument("--disable-background-timer-throttling")
+        # options.add_argument("--disable-backgrounding-occluded-windows")
+        # options.add_argument("--disable-renderer-backgrounding")
+
+        # prefs = {
+        #     "profile.managed_default_content_settings.images": 2,  # Disable images
+        #     "profile.default_content_setting_values.notifications": 2,  # Disable notifications
+        #     "profile.managed_default_content_settings.stylesheets": 2,  # Disable CSS
+        #     "profile.managed_default_content_settings.cookies": 2,  # Disable cookies
+        #     "profile.managed_default_content_settings.plugins": 2,  # Disable plugins
+        #     "profile.managed_default_content_settings.popups": 2,  # Disable popups
+        #     "profile.managed_default_content_settings.geolocation": 2,  # Disable geolocation
+        #     "profile.managed_default_content_settings.media_stream": 2,  # Disable media stream
+        # }
+        # options.add_experimental_option("prefs", prefs)
 
         if not user:
             return Response({"Message": "User not Found!!!!"})
