@@ -524,16 +524,52 @@ from bs4 import BeautifulSoup
 import urllib.parse
 from urllib.parse import parse_qs, urlparse
 
+import asyncio
+import aiohttp
+from asgiref.sync import sync_to_async
+from concurrent.futures import ThreadPoolExecutor
+
 class ProductSearchView(APIView):
-    def fetch_html_content(self, url, options, queue):
+    renderer_classes = [UserRenderer]
+    permission_classes = [IsAuthenticated]
+
+    def fetch_html_content(self, url):
+        options = Options()
+        options.add_argument("--headless")
+        options.add_argument("window-size=1400,1500")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--no-sandbox")
+        options.add_argument("start-maximized")
+        options.add_argument("enable-automation")
+        options.add_argument("--disable-infobars")
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--disable-extensions")
+        options.add_argument("--disable-popup-blocking")
+        options.add_argument("--disable-notifications")
+        options.add_argument("--disable-background-timer-throttling")
+        options.add_argument("--disable-backgrounding-occluded-windows")
+        options.add_argument("--disable-renderer-backgrounding")
+
+        prefs = {
+            "profile.managed_default_content_settings.images": 2,  # Disable images
+            "profile.default_content_setting_values.notifications": 2,  # Disable notifications
+            "profile.managed_default_content_settings.stylesheets": 2,  # Disable CSS
+            "profile.managed_default_content_settings.cookies": 2,  # Disable cookies
+            "profile.managed_default_content_settings.plugins": 2,  # Disable plugins
+            "profile.managed_default_content_settings.popups": 2,  # Disable popups
+            "profile.managed_default_content_settings.geolocation": 2,  # Disable geolocation
+            "profile.managed_default_content_settings.media_stream": 2,  # Disable media stream
+        }
+        options.add_experimental_option("prefs", prefs)
+
+        driver = Chrome(options=options)
         try:
-            driver = Chrome(options=options)
             driver.get(url)
-            data = driver.page_source
-            driver.quit()
-            queue.put(data)
+            return driver.page_source
         except Exception as e:
-            queue.put(None)
+            return Response({"Message":f"Error occured: {str(e)}"})
+        finally:
+            driver.quit()
 
     def parse_product_details(self, html_content):
         soup = BeautifulSoup(html_content, 'html.parser')
@@ -567,43 +603,25 @@ class ProductSearchView(APIView):
                 'Price': price,
                 'Website Name': website_name,
                 'Link': link,
-                "Rating" : rating,
-                "Review Counts" : review_count
+                "Rating": rating,
+                "Review Counts": review_count
             })
 
         return products
 
-    def post(self, request):
+    async def fetch_all_pages(self, urls):
+        with ThreadPoolExecutor(max_workers=6) as executor:
+            loop = asyncio.get_event_loop()
+            tasks = [loop.run_in_executor(executor, self.fetch_html_content, url) for url in urls]
+            return await asyncio.gather(*tasks)
+
+    @sync_to_async
+    def get_user(self, userid):
+        return CustomUser.objects.filter(id=userid).first()
+
+    async def async_post(self, request):
         userid = get_user_id_from_token(request)
-        user = CustomUser.objects.filter(id=userid)
-
-        options = Options()
-        options.add_argument("--headless")
-        options.add_argument("window-size=1400,1500")
-        options.add_argument("--disable-gpu")
-        options.add_argument("--no-sandbox")
-        options.add_argument("start-maximized")
-        options.add_argument("enable-automation")
-        options.add_argument("--disable-infobars")
-        options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--disable-extensions")
-        options.add_argument("--disable-popup-blocking")
-        options.add_argument("--disable-notifications")
-        options.add_argument("--disable-background-timer-throttling")
-        options.add_argument("--disable-backgrounding-occluded-windows")
-        options.add_argument("--disable-renderer-backgrounding")
-
-        prefs = {
-            "profile.managed_default_content_settings.images": 2,  # Disable images
-            "profile.default_content_setting_values.notifications": 2,  # Disable notifications
-            "profile.managed_default_content_settings.stylesheets": 2,  # Disable CSS
-            "profile.managed_default_content_settings.cookies": 2,  # Disable cookies
-            "profile.managed_default_content_settings.plugins": 2,  # Disable plugins
-            "profile.managed_default_content_settings.popups": 2,  # Disable popups
-            "profile.managed_default_content_settings.geolocation": 2,  # Disable geolocation
-            "profile.managed_default_content_settings.media_stream": 2,  # Disable media stream
-        }
-        options.add_experimental_option("prefs", prefs)
+        user = await self.get_user(userid)
 
         if not user:
             return Response({"Message": "User not Found!!!!"})
@@ -638,27 +656,19 @@ class ProductSearchView(APIView):
 
         filter_string = ','.join(filters)
         
-        def fetch_page(pge, queue):
-            url = f"https://www.google.com/search?q={product_name}&sca_esv=0835a04e1987451a&sca_upv=1&hl=en-GB&psb=1&tbs=vw:d,{filter_string}&tbm=shop&ei=PtyLZqe-L52qseMP_e2qoAk&start={pge}&sa=N&ved=0ahUKEwin1bPLuZeHAxUdVWwGHf22CpQ4eBDy0wMI7w0&biw=1536&bih=730&dpr=1.25"
-            self.fetch_html_content(url, options, queue)
+        urls = [
+            f"https://www.google.com/search?q={product_name}&sca_esv=0835a04e1987451a&sca_upv=1&hl=en-GB&psb=1&tbs=vw:d,{filter_string}&tbm=shop&ei=PtyLZqe-L52qseMP_e2qoAk&start={pge}&sa=N&ved=0ahUKEwin1bPLuZeHAxUdVWwGHf22CpQ4eBDy0wMI7w0&biw=1536&bih=730&dpr=1.25"
+            for pge in range(0, 241, 60)  # Reduced to 5 pages
+        ]
 
         retries = 3
         for attempt in range(retries):
             try:
+                html_contents = await self.fetch_all_pages(urls)
+
                 all_products = []
-                threads = []
-                queue = Queue()
 
-                for pge in range(0, 241, 60):
-                    thread = threading.Thread(target=fetch_page, args=(pge, queue))
-                    threads.append(thread)
-                    thread.start()
-
-                for thread in threads:
-                    thread.join()
-
-                while not queue.empty():
-                    html_content = queue.get()
+                for html_content in html_contents:
                     if html_content:
                         products = self.parse_product_details(html_content)
                         all_products.extend(products)
@@ -667,13 +677,169 @@ class ProductSearchView(APIView):
                     return Response({'Message': 'Fetch the Product data Successfully', "Product_data": all_products}, status=status.HTTP_200_OK)
                 else:
                     print(f"Attempt {attempt + 1}: Products list is empty, retrying...")
-                    time.sleep(3)  # Wait before retrying
+                    await asyncio.sleep(3)  # Wait before retrying
 
             except Exception as e:
                 print(f"Attempt {attempt + 1}: Error occurred: {str(e)}")
-                time.sleep(3)  # Wait before retrying
+                await asyncio.sleep(3)  # Wait before retrying
 
         return Response({'Message': 'Failed to fetch product data after multiple attempts'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def post(self, request):
+        return asyncio.run(self.async_post(request))
+
+
+
+# class ProductSearchView(APIView):
+#     def fetch_html_content(self, url, options, queue):
+#         try:
+#             driver = Chrome(options=options)
+#             driver.get(url)
+#             data = driver.page_source
+#             driver.quit()
+#             queue.put(data)
+#         except Exception as e:
+#             queue.put(None)
+
+#     def parse_product_details(self, html_content):
+#         soup = BeautifulSoup(html_content, 'html.parser')
+#         products = []
+
+#         product_grid = soup.find_all('div', class_='sh-dgr__gr-auto sh-dgr__grid-result')
+#         for product in product_grid:
+#             product_name = product.find('h3', class_='tAxDx').get_text(strip=True) if product.find('h3', class_='tAxDx') else None
+#             price_span = product.find('span', class_='a8Pemb OFFNJ')
+#             price = price_span.get_text(strip=True) if price_span else None
+#             website_span = product.find('div', class_='aULzUe IuHnof')
+#             website_name = website_span.get_text(strip=True) if website_span else None
+
+#             # Extract ratings
+#             rating_span = product.find('span', class_='Rsc7Yb')
+#             rating = rating_span.get_text(strip=True) if rating_span else None
+
+#             # Extract review count
+#             review_count_span = rating_span.find_next_sibling('div', class_='qSSQfd uqAnbd').next_sibling if rating_span else None
+#             review_count = review_count_span.get_text(strip=True) if review_count_span else None
+
+#             link_tag = product.find('a', class_='shntl')
+#             link = link_tag['href'] if link_tag else None
+
+#             if link and link.startswith('/url?url='):
+#                 parsed_url = urllib.parse.parse_qs(urllib.parse.urlparse(link).query)
+#                 link = parsed_url['url'][0] if 'url' in parsed_url else link
+            
+#             products.append({
+#                 'Product Name': product_name,
+#                 'Price': price,
+#                 'Website Name': website_name,
+#                 'Link': link,
+#                 "Rating" : rating,
+#                 "Review Counts" : review_count
+#             })
+
+#         return products
+
+#     def post(self, request):
+#         userid = get_user_id_from_token(request)
+#         user = CustomUser.objects.filter(id=userid)
+
+#         options = Options()
+#         options.add_argument("--headless")
+#         options.add_argument("window-size=1400,1500")
+#         options.add_argument("--disable-gpu")
+#         options.add_argument("--no-sandbox")
+#         options.add_argument("start-maximized")
+#         options.add_argument("enable-automation")
+#         options.add_argument("--disable-infobars")
+#         options.add_argument("--disable-dev-shm-usage")
+#         options.add_argument("--disable-extensions")
+#         options.add_argument("--disable-popup-blocking")
+#         options.add_argument("--disable-notifications")
+#         options.add_argument("--disable-background-timer-throttling")
+#         options.add_argument("--disable-backgrounding-occluded-windows")
+#         options.add_argument("--disable-renderer-backgrounding")
+
+#         prefs = {
+#             "profile.managed_default_content_settings.images": 2,  # Disable images
+#             "profile.default_content_setting_values.notifications": 2,  # Disable notifications
+#             "profile.managed_default_content_settings.stylesheets": 2,  # Disable CSS
+#             "profile.managed_default_content_settings.cookies": 2,  # Disable cookies
+#             "profile.managed_default_content_settings.plugins": 2,  # Disable plugins
+#             "profile.managed_default_content_settings.popups": 2,  # Disable popups
+#             "profile.managed_default_content_settings.geolocation": 2,  # Disable geolocation
+#             "profile.managed_default_content_settings.media_stream": 2,  # Disable media stream
+#         }
+#         options.add_experimental_option("prefs", prefs)
+
+#         if not user:
+#             return Response({"Message": "User not Found!!!!"})
+
+#         product = request.data.get('product_name')
+
+#         if not product:
+#             return Response({'Message': 'Please provide product_name'}, status=status.HTTP_400_BAD_REQUEST)
+
+#         product_name = str(product).replace(' ', '+')
+
+#         # Get filter parameters from the request
+#         on_sale = request.data.get('on_sale')
+#         ppr_min = request.data.get('ppr_min')
+#         ppr_max = request.data.get('ppr_max')
+#         avg_rating = request.data.get('avg_rating')
+#         ship_speed = request.data.get('ship_speed')
+#         free_shipping = request.data.get('free_shipping')
+        
+#         filters = []
+
+#         if on_sale:
+#             filters.append('sales:1')
+#         if ppr_min and ppr_max:
+#             filters.append(f'price:1,ppr_min:{ppr_min},ppr_max:{ppr_max}')
+#         if avg_rating:
+#             filters.append(f'avg_rating:{avg_rating}')
+#         if ship_speed:
+#             filters.append(f'shipspped:{ship_speed}')
+#         if free_shipping:
+#             filters.append('ship:1')
+
+#         filter_string = ','.join(filters)
+        
+#         def fetch_page(pge, queue):
+#             url = f"https://www.google.com/search?q={product_name}&sca_esv=0835a04e1987451a&sca_upv=1&hl=en-GB&psb=1&tbs=vw:d,{filter_string}&tbm=shop&ei=PtyLZqe-L52qseMP_e2qoAk&start={pge}&sa=N&ved=0ahUKEwin1bPLuZeHAxUdVWwGHf22CpQ4eBDy0wMI7w0&biw=1536&bih=730&dpr=1.25"
+#             self.fetch_html_content(url, options, queue)
+
+#         retries = 3
+#         for attempt in range(retries):
+#             try:
+#                 all_products = []
+#                 threads = []
+#                 queue = Queue()
+
+#                 for pge in range(0, 241, 60):
+#                     thread = threading.Thread(target=fetch_page, args=(pge, queue))
+#                     threads.append(thread)
+#                     thread.start()
+
+#                 for thread in threads:
+#                     thread.join()
+
+#                 while not queue.empty():
+#                     html_content = queue.get()
+#                     if html_content:
+#                         products = self.parse_product_details(html_content)
+#                         all_products.extend(products)
+
+#                 if all_products:
+#                     return Response({'Message': 'Fetch the Product data Successfully', "Product_data": all_products}, status=status.HTTP_200_OK)
+#                 else:
+#                     print(f"Attempt {attempt + 1}: Products list is empty, retrying...")
+#                     time.sleep(3)  # Wait before retrying
+
+#             except Exception as e:
+#                 print(f"Attempt {attempt + 1}: Error occurred: {str(e)}")
+#                 time.sleep(3)  # Wait before retrying
+
+#         return Response({'Message': 'Failed to fetch product data after multiple attempts'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
