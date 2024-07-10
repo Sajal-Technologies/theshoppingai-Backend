@@ -608,6 +608,50 @@ class ProductSearchView(APIView):
             })
 
         return products
+    
+    
+
+
+    
+    # def extract_product_info(self, product):
+    #     product_name = product.select_one('h3.tAxDx')
+    #     product_name = product_name.get_text(strip=True) if product_name else None
+
+    #     price_span = product.select_one('span.a8Pemb.OFFNJ')
+    #     price = price_span.get_text(strip=True) if price_span else None
+
+    #     website_span = product.select_one('div.aULzUe.IuHnof')
+    #     website_name = website_span.get_text(strip=True) if website_span else None
+
+    #     rating_span = product.select_one('span.Rsc7Yb')
+    #     rating = rating_span.get_text(strip=True) if rating_span else None
+
+    #     review_count_span = rating_span.find_next_sibling('div.qSSQfd.uqAnbd').next_sibling if rating_span and rating_span.find_next_sibling('div.qSSQfd.uqAnbd') else None
+    #     review_count = review_count_span.get_text(strip=True) if review_count_span else None
+
+    #     link_tag = product.select_one('a.shntl')
+    #     link = link_tag['href'] if link_tag else None
+
+    #     if link and link.startswith('/url?url='):
+    #         parsed_url = urllib.parse.parse_qs(urllib.parse.urlparse(link).query)
+    #         link = parsed_url['url'][0] if 'url' in parsed_url else link
+
+    #     return {
+    #         'Product Name': product_name,
+    #         'Price': price,
+    #         'Website Name': website_name,
+    #         'Link': link,
+    #         "Rating": rating,
+    #         "Review Counts": review_count
+    #     }
+
+    # def parse_product_details(self, html_content):
+    #     soup = BeautifulSoup(html_content, 'html.parser')
+    #     product_grid = soup.select('div.sh-dgr__gr-auto.sh-dgr__grid-result')
+    #     products = [self.extract_product_info(product) for product in product_grid]
+    #     return products
+
+
 
     async def fetch_all_pages(self, urls):
         with ThreadPoolExecutor(max_workers=6) as executor:
@@ -658,7 +702,7 @@ class ProductSearchView(APIView):
         
         urls = [
             f"https://www.google.com/search?q={product_name}&sca_esv=0835a04e1987451a&sca_upv=1&hl=en-GB&psb=1&tbs=vw:d,{filter_string}&tbm=shop&ei=PtyLZqe-L52qseMP_e2qoAk&start={pge}&sa=N&ved=0ahUKEwin1bPLuZeHAxUdVWwGHf22CpQ4eBDy0wMI7w0&biw=1536&bih=730&dpr=1.25"
-            for pge in range(0, 241, 60)  # Reduced to 5 pages
+            for pge in range(0, 121, 60)  # Reduced to 3 pages
         ]
 
         retries = 3
