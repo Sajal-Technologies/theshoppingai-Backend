@@ -684,6 +684,7 @@ class ProductSearchView(APIView):
         avg_rating = request.data.get('avg_rating')
         ship_speed = request.data.get('ship_speed')
         free_shipping = request.data.get('free_shipping')
+        sort_order = request.data.get('sort_order')  # New parameter for sorting
         
         filters = []
 
@@ -697,6 +698,18 @@ class ProductSearchView(APIView):
             filters.append(f'shipspped:{ship_speed}')
         if free_shipping:
             filters.append('ship:1')
+
+        # Add sort order to the filters
+        sort_mapping = {
+            'relevance': 'p_ord:r',
+            'low_to_high': 'p_ord:p',
+            'high_to_low': 'p_ord:pd',
+            'rating': 'p_ord:rv'
+        }
+
+        if sort_order in sort_mapping:
+            filters.append(sort_mapping[sort_order])
+
 
         filter_string = ','.join(filters)
         
