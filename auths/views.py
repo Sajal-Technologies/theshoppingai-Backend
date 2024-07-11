@@ -687,13 +687,22 @@ class ProductSearchView(APIView):
         sort_order = request.data.get('sort_order')  # New parameter for sorting
         
         filters = []
+        rating_mapping = {
+            '5': '500',
+            '4': '400',
+            '3': '300',
+            '2': '200',
+            '1': '100'
+        }
 
+        if avg_rating in rating_mapping:
+            filters.append(f'avg_rating:{rating_mapping[avg_rating]}')
         if on_sale:
             filters.append('sales:1')
         if ppr_min and ppr_max:
             filters.append(f'price:1,ppr_min:{ppr_min},ppr_max:{ppr_max}')
-        if avg_rating:
-            filters.append(f'avg_rating:{avg_rating}')
+        # if avg_rating in rating_mapping:
+        #     filters.append(f'avg_rating:{rating_mapping[avg_rating]}')
         if ship_speed:
             filters.append(f'shipspped:{ship_speed}')
         if free_shipping:
@@ -716,8 +725,9 @@ class ProductSearchView(APIView):
         urls = [
             f"https://www.google.com/search?q={product_name}&sca_esv=0835a04e1987451a&sca_upv=1&hl=en-GB&psb=1&tbs=vw:d,{filter_string}&tbm=shop&ei=PtyLZqe-L52qseMP_e2qoAk&start={pge}&sa=N&ved=0ahUKEwin1bPLuZeHAxUdVWwGHf22CpQ4eBDy0wMI7w0&biw=1536&bih=730&dpr=1.25"
             for pge in range(0, 121, 60)  # Reduced to 3 pages
+            
         ]
-
+        print(urls)
         retries = 3
         for attempt in range(retries):
             try:
