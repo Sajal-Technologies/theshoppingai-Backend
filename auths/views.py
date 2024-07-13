@@ -528,6 +528,11 @@ import asyncio
 import aiohttp
 from asgiref.sync import sync_to_async
 from concurrent.futures import ThreadPoolExecutor
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class ProductSearchView(APIView):
     renderer_classes = [UserRenderer]
@@ -564,14 +569,18 @@ class ProductSearchView(APIView):
 
         driver = Chrome(options=options)
         try:
+            logger.info(f"Fetching URL: {url}")
             driver.get(url)
+            logger.info("Successfully fetched URL")
             return driver.page_source
         except Exception as e:
+            logger.error(f"Error occurred while fetching URL {url}: {str(e)}")
             return Response({"Message":f"Error occured: {str(e)}"})
         finally:
             driver.quit()
 
     def parse_product_details(self, html_content):
+        logger.info("Parsing HTML content")
         soup = BeautifulSoup(html_content, 'html.parser')
         products = []
 
@@ -606,7 +615,7 @@ class ProductSearchView(APIView):
                 "Rating": rating,
                 "Review Counts": review_count
             })
-
+        logger.info(f"Parsed {len(products)} products")
         return products
     
     
@@ -668,11 +677,13 @@ class ProductSearchView(APIView):
         user = await self.get_user(userid)
 
         if not user:
+            logger.error("User not found")
             return Response({"Message": "User not Found!!!!"})
 
         product = request.data.get('product_name')
 
         if not product:
+            logger.warning("Product name not provided")
             return Response({'Message': 'Please provide product_name'}, status=status.HTTP_400_BAD_REQUEST)
 
         product_name = str(product).replace(' ', '+')
@@ -727,10 +738,12 @@ class ProductSearchView(APIView):
             for pge in range(0, 121, 60)  # Reduced to 3 pages
             
         ]
+        logger.info(f"Generated URLs: {urls}")
         print(urls)
         retries = 3
         for attempt in range(retries):
             try:
+                logger.info(f"Fetching HTML contents, attempt {attempt + 1}")
                 html_contents = await self.fetch_all_pages(urls)
 
                 all_products = []
@@ -741,15 +754,19 @@ class ProductSearchView(APIView):
                         all_products.extend(products)
 
                 if all_products:
+                    logger.info(f"Successfully fetched {len(all_products)} products")
                     return Response({'Message': 'Fetch the Product data Successfully', "Product_data": all_products}, status=status.HTTP_200_OK)
                 else:
+                    logger.warning(f"Attempt {attempt + 1}: Products list is empty, retrying...")
                     print(f"Attempt {attempt + 1}: Products list is empty, retrying...")
                     await asyncio.sleep(3)  # Wait before retrying
 
             except Exception as e:
+                logger.error(f"Attempt {attempt + 1}: Error occurred: {str(e)}")
                 print(f"Attempt {attempt + 1}: Error occurred: {str(e)}")
                 await asyncio.sleep(3)  # Wait before retrying
 
+        logger.error("Failed to fetch product data after multiple attempts")
         return Response({'Message': 'Failed to fetch product data after multiple attempts'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def post(self, request):
