@@ -673,6 +673,7 @@ class ProductSearchView(APIView):
         return CustomUser.objects.filter(id=userid).first()
 
     async def async_post(self, request):
+        start_time = time.time()
         userid = get_user_id_from_token(request)
         user = await self.get_user(userid)
 
@@ -754,7 +755,10 @@ class ProductSearchView(APIView):
                         all_products.extend(products)
 
                 if all_products:
+                    end_time = time.time()
+                    duration = end_time - start_time
                     logger.info(f"Successfully fetched {len(all_products)} products")
+                    logger.info(f"Time Taken: {duration}")
                     return Response({'Message': 'Fetch the Product data Successfully', "Product_data": all_products}, status=status.HTTP_200_OK)
                 else:
                     logger.warning(f"Attempt {attempt + 1}: Products list is empty, retrying...")
