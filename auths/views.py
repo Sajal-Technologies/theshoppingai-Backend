@@ -279,7 +279,7 @@ class UserLoginView(APIView):
         else:
             return Response({
                                     "Message": 
-                                        'Sorry, your password was incorrect. Please double-check your password.'
+                                        'Sorry, your password was incorrect.'
                                     
                                 }
                             , status=status.HTTP_401_UNAUTHORIZED)
