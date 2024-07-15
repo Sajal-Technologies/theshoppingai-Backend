@@ -735,7 +735,8 @@ class ProductSearchView(APIView):
         filter_string = ','.join(filters)
         
         urls = [
-            f"https://www.google.com/search?q={product_name}&sca_esv=0835a04e1987451a&sca_upv=1&hl=en-GB&psb=1&tbs=vw:d,{filter_string}&tbm=shop&ei=PtyLZqe-L52qseMP_e2qoAk&start={pge}&sa=N&ved=0ahUKEwin1bPLuZeHAxUdVWwGHf22CpQ4eBDy0wMI7w0&biw=1536&bih=730&dpr=1.25"
+            f"https://www.google.com/search?q={product_name}&sca_esv=9c8758eb10df77ff&sca_upv=1&hl=en-GB&psb=1&tbs=vw:d,{filter_string}&tbm=shop&ei=gc-UZr-xKtCN4-EP99WjoAU&start={pge}&sa=N&ved=0ahUKEwj_9bLawqiHAxXQxjgGHffqCFQQ8tMDCIMb&biw=1536&bih=730&dpr=1.25"
+            # f"https://www.google.com/search?q={product_name}&sca_esv=0835a04e1987451a&sca_upv=1&hl=en-GB&psb=1&tbs=vw:d,{filter_string}&tbm=shop&ei=PtyLZqe-L52qseMP_e2qoAk&start={pge}&sa=N&ved=0ahUKEwin1bPLuZeHAxUdVWwGHf22CpQ4eBDy0wMI7w0&biw=1536&bih=730&dpr=1.25"
             for pge in range(0, 121, 60)  # Reduced to 3 pages
             
         ]
