@@ -1163,7 +1163,7 @@ class OxylabSearchView(APIView):
             logger.warning("User not found for userid: %s", userid)
             return Response({"Message": "User not Found!!!!"})
 
-        query = request.data.get("query")
+        query = request.data.get("product_name")
         ppr_min = request.data.get("ppr_min", None)
         ppr_max = request.data.get("ppr_max", None)
         # avg_rating = request.data.get("avg_rating", None)
