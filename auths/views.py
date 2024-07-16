@@ -1256,3 +1256,66 @@ class OxylabSearchView(APIView):
         if 'url' in query_params:
             return query_params['url'][0]
         return encoded_url
+
+
+
+
+
+import requests
+from pprint import pprint
+
+class OxylabProductDetailView(APIView):
+    def post(self,request):
+        logger = logging.getLogger(__name__)  # Get logger for this module
+
+        # Log the incoming request details
+        logger.info(f"Received POST request: {request.data}")
+        userid = get_user_id_from_token(request)
+        user = CustomUser.objects.filter(id=userid)
+
+        if not user:
+            logger.warning("User not found for userid: %s", userid)
+            return Response({"Message": "User not Found!!!!"})
+
+        product_id = request.data.get("product_id")
+
+        if not product_id:
+            return Response({'Message': 'Please provide product_id to search'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            oxy_account = oxylab_account.objects.get(id=1)
+            username = oxy_account.username
+            password = oxy_account.password
+        except oxylab_account.DoesNotExist:
+            return Response({'Message': 'Error in oxylabs credential '}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+        # Structure payload.
+        payload = {
+            'source': 'google_shopping_product',
+            'domain': 'co.in',
+            'query': product_id, # Product ID
+            'parse': True
+        }
+
+        # Get response.
+        response = requests.request(
+            'POST',
+            'https://realtime.oxylabs.io/v1/queries',
+            auth=(username, password),
+            json=payload,
+        )
+
+        # Print prettified response to stdout.
+        pprint(response.json())
+        try:
+            # data = response.json()
+            data = response.json()['results'][0]['content']
+            print(response.text)
+            logger.debug(f"Received API response: {response.text}")
+
+            return Response({'Message': 'Fetch the Product detail Successfully', "Product_detail": data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f'Unable to fetch the Product detail: {str(e)}')
+            return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

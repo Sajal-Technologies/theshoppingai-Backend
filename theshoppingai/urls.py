@@ -35,4 +35,6 @@ urlpatterns = [
     path('api/search-product/', ProductSearchView.as_view(), name='api-ProductSearchView'), 
 
     path('api/oxy-search-product/', OxylabSearchView.as_view(), name='api-oxylabSearchView'), 
+
+    path('api/oxy-product-detail/', OxylabProductDetailView.as_view(), name='api-oxylabSearchView'), 
 ]
