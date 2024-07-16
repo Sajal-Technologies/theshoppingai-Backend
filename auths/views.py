@@ -1261,7 +1261,7 @@ class OxylabSearchView(APIView):
 
 
 
-import requests
+import requests, json
 from pprint import pprint
 
 class OxylabProductDetailView(APIView):
@@ -1307,15 +1307,39 @@ class OxylabProductDetailView(APIView):
             json=payload,
         )
 
+        data =response.json()#['results'][0]['content']
+
+        # URL prefix to prepend
+        url_prefix = 'https://www.google.com'
+
+        # Update seller links
+        if 'pricing' in data['results'][0]['content'] and 'online' in data['results'][0]['content']['pricing']:
+            for seller_info in data['results'][0]['content']['pricing']['online']:
+                seller_link = seller_info.get('seller_link')
+                if seller_link and seller_link.startswith('/'):
+                    seller_info['seller_link'] = url_prefix + seller_link
+
+        # Update review URLs for 1, 3, 4, and 5 stars
+        if 'reviews' in data['results'][0]['content'] and 'reviews_by_stars' in data['results'][0]['content']['reviews']:
+            for rating in ['1', '3', '4', '5']:
+                reviews_data = data['results'][0]['content']['reviews']['reviews_by_stars'].get(rating)
+                if reviews_data:
+                    review_url = reviews_data.get('url')
+                    if review_url and review_url.startswith('/'):
+                        reviews_data['url'] = url_prefix + review_url
+
+        # Convert the updated data back to JSON format if needed
+        # updated_json = json.dumps(data, indent=2,ensure_ascii=False)
+
         # Print prettified response to stdout.
-        pprint(response.json())
+        pprint(data)
         try:
             # data = response.json()
-            data = response.json()['results'][0]['content']
-            print(response.text)
-            logger.debug(f"Received API response: {response.text}")
+            prod_data = data['results'][0]['content']
+            # print(data)
+            logger.debug(f"Received API response: {prod_data}")
 
-            return Response({'Message': 'Fetch the Product detail Successfully', "Product_detail": data}, status=status.HTTP_200_OK)
+            return Response({'Message': 'Fetch the Product detail Successfully', "Product_detail": prod_data}, status=status.HTTP_200_OK)
         except Exception as e:
             logger.error(f'Unable to fetch the Product detail: {str(e)}')
             return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
