@@ -1054,16 +1054,121 @@ class ProductSearchView(APIView):
 
 
 
-class oxylabSearchView(APIView):   
-    def post(self, request):
+# class oxylabSearchView(APIView):   
+#     def post(self, request):
 
+#         userid = get_user_id_from_token(request)
+#         user = CustomUser.objects.filter(id=userid)
+
+#         if not user:
+#             return Response({"Message":"User not Found!!!!"})
+
+#         query = request.data.get("query")
+
+#         if not query:
+#             return Response({'Message': 'Please provide query to search'}, status=status.HTTP_400_BAD_REQUEST)
+
+#         try:
+#             oxy_account = oxylab_account.objects.get(id=1)
+#             username = oxy_account.username
+#             password = oxy_account.password
+#         except oxylab_account.DoesNotExist:
+#             return Response({'Message': 'Error in oxylabs credential '}, status=status.HTTP_400_BAD_REQUEST)
+
+#         query_main = str(query).replace(" ","+")
+
+#         try:
+#             # Structure payload.
+#             payload = {
+#                 'source': 'google_shopping_search',
+#                 'domain': 'com',
+#                 'query': query_main,
+#                 'pages': 4,
+#                 'parse': True,
+#                 'context': [
+#                     {'key': 'sort_by', 'value': 'pd'},
+#                     {'key': 'min_price', 'value': 1},
+#                 ],
+#             }
+
+#             # Get response.
+#             response = requests.request(
+#                 'POST',
+#                 'https://realtime.oxylabs.io/v1/queries',
+#                 auth=(f'{username}', f'{password}'),
+#                 json=payload,
+#             )
+
+#             time.sleep(2)
+
+#             # Print prettified response to stdout.
+#             data =response.json()
+#             shopping_data=[]
+
+
+#             for i in range(len(data['results'])):
+#                 organic_results = data['results'][i]['content']['results']['organic']
+#                 for item in organic_results:
+#                     try:
+#                         # Fix the main URL
+#                         # item['url'] = self.fix_url(item['url'])
+#                         # Fix the merchant URL if it exists
+#                         if 'merchant' in item and 'url' in item['merchant']:
+#                             item['merchant']['url'] = self.fix_url(item['merchant']['url'])
+#                     except Exception as e:
+#                         print(f"Error parsing URL for item: {e}")
+#                         # If there is an error, leave the URL as it is
+#                     shopping_data.append(item)
+
+
+
+#             # for i in range(len(data['results'])):
+#             #     organic_results = data['results'][i]['content']['results']['organic']
+#             #     for item in organic_results:
+#             #         # Fix the main URL
+#             #         # item['url'] = self.fix_url(item['url'])
+#             #         # Fix the merchant URL if it exists
+#             #         if 'merchant' in item and 'url' in item['merchant']:
+#             #             item['merchant']['url'] = self.fix_url(item['merchant']['url'])
+#             #         shopping_data.append(item)
+#             print(response.text)
+            
+#             return Response({'Message': 'Fetch the Product data Successfully', "Product_data" : shopping_data}, status=status.HTTP_200_OK)
+#         except Exception as e:
+#             return Response({'Message': f'Unable to fetch the Product data: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+#     @staticmethod
+#     def fix_url(encoded_url):
+#         parsed_url = urlparse(encoded_url)
+#         query_params = parse_qs(parsed_url.query)
+#         if 'url' in query_params:
+#             return query_params['url'][0]
+#         return encoded_url
+# Configure logging
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s %(levelname)s %(message)s')
+
+
+class OxylabSearchView(APIView):
+    def post(self, request):
+        logger = logging.getLogger(__name__)  # Get logger for this module
+
+        # Log the incoming request details
+        logger.info(f"Received POST request: {request.data}")
         userid = get_user_id_from_token(request)
         user = CustomUser.objects.filter(id=userid)
 
         if not user:
-            return Response({"Message":"User not Found!!!!"})
+            logger.warning("User not found for userid: %s", userid)
+            return Response({"Message": "User not Found!!!!"})
 
         query = request.data.get("query")
+        ppr_min = request.data.get("ppr_min", None)
+        ppr_max = request.data.get("ppr_max", None)
+        # avg_rating = request.data.get("avg_rating", None)
+        sort_by = request.data.get("sort_by", 'relevance')  # Default to 'relevance'
+        # location = request.data.get("location", "India")  # Default location is India
 
         if not query:
             return Response({'Message': 'Please provide query to search'}, status=status.HTTP_400_BAD_REQUEST)
@@ -1075,21 +1180,39 @@ class oxylabSearchView(APIView):
         except oxylab_account.DoesNotExist:
             return Response({'Message': 'Error in oxylabs credential '}, status=status.HTTP_400_BAD_REQUEST)
 
-        query_main = str(query).replace(" ","+")
+        query_main = str(query).replace(" ", "+")
+
+        sort_mapping = {
+            'relevance': 'r',
+            'low_to_high': 'p',
+            'high_to_low': 'pd',
+            'rating': 'rv'
+        }
+
+        sort_key = sort_mapping.get(sort_by, 'r')  # Default to 'relevance' if sort_by is invalid
+
+        # Build context dynamically based on provided filters
+        context = [{'key': 'sort_by', 'value': sort_key}]
+        
+        if ppr_min is not None:
+            context.append({'key': 'min_price', 'value': ppr_min})
+        
+        if ppr_max is not None:
+            context.append({'key': 'max_price', 'value': ppr_max})
 
         try:
             # Structure payload.
             payload = {
                 'source': 'google_shopping_search',
-                'domain': 'com',
+                'domain': 'co.in',
                 'query': query_main,
                 'pages': 4,
                 'parse': True,
-                'context': [
-                    {'key': 'sort_by', 'value': 'pd'},
-                    {'key': 'min_price', 'value': 1},
-                ],
+                # "currency": "EUR",
+                'context': context,
             }
+            logger.debug(f"Sending API request with payload: {payload}")
+            print(payload)
 
             # Get response.
             response = requests.request(
@@ -1102,41 +1225,29 @@ class oxylabSearchView(APIView):
             time.sleep(2)
 
             # Print prettified response to stdout.
-            data =response.json()
-            shopping_data=[]
-
+            data = response.json()
+            shopping_data = []
 
             for i in range(len(data['results'])):
                 organic_results = data['results'][i]['content']['results']['organic']
                 for item in organic_results:
                     try:
-                        # Fix the main URL
-                        # item['url'] = self.fix_url(item['url'])
                         # Fix the merchant URL if it exists
                         if 'merchant' in item and 'url' in item['merchant']:
                             item['merchant']['url'] = self.fix_url(item['merchant']['url'])
                     except Exception as e:
+                        logger.error(f"Error parsing URL for item: {e}")
                         print(f"Error parsing URL for item: {e}")
                         # If there is an error, leave the URL as it is
                     shopping_data.append(item)
 
-
-
-            # for i in range(len(data['results'])):
-            #     organic_results = data['results'][i]['content']['results']['organic']
-            #     for item in organic_results:
-            #         # Fix the main URL
-            #         # item['url'] = self.fix_url(item['url'])
-            #         # Fix the merchant URL if it exists
-            #         if 'merchant' in item and 'url' in item['merchant']:
-            #             item['merchant']['url'] = self.fix_url(item['merchant']['url'])
-            #         shopping_data.append(item)
             print(response.text)
-            
-            return Response({'Message': 'Fetch the Product data Successfully', "Product_data" : shopping_data}, status=status.HTTP_200_OK)
+            logger.debug(f"Received API response: {response.text}")
+
+            return Response({'Message': 'Fetch the Product data Successfully', "Product_data": shopping_data}, status=status.HTTP_200_OK)
         except Exception as e:
+            logger.error(f'Unable to fetch the Product data: {str(e)}')
             return Response({'Message': f'Unable to fetch the Product data: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
 
     @staticmethod
     def fix_url(encoded_url):
