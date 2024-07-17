@@ -1151,7 +1151,7 @@ logging.basicConfig(level=logging.DEBUG,
 
 
 class OxylabSearchView(APIView):
-    def get(self, request):
+    def post(self, request):
         logger = logging.getLogger(__name__)  # Get logger for this module
 
         # Log the incoming request details
@@ -1265,7 +1265,7 @@ import requests, json
 from pprint import pprint
 
 class OxylabProductDetailView(APIView):
-    def get(self,request):
+    def post(self,request):
         logger = logging.getLogger(__name__)  # Get logger for this module
 
         # Log the incoming request details
