@@ -1156,12 +1156,12 @@ class OxylabSearchView(APIView):
 
         # Log the incoming request details
         logger.info(f"Received POST request: {request.data}")
-        userid = get_user_id_from_token(request)
-        user = CustomUser.objects.filter(id=userid)
+        # userid = get_user_id_from_token(request)
+        # user = CustomUser.objects.filter(id=userid)
 
-        if not user:
-            logger.warning("User not found for userid: %s", userid)
-            return Response({"Message": "User not Found!!!!"})
+        # if not user:
+        #     logger.warning("User not found for userid: %s", userid)
+        #     return Response({"Message": "User not Found!!!!"})
 
         query = request.data.get("product_name")
         ppr_min = request.data.get("ppr_min", None)
@@ -1270,12 +1270,12 @@ class OxylabProductDetailView(APIView):
 
         # Log the incoming request details
         logger.info(f"Received POST request: {request.data}")
-        userid = get_user_id_from_token(request)
-        user = CustomUser.objects.filter(id=userid)
+        # userid = get_user_id_from_token(request)
+        # user = CustomUser.objects.filter(id=userid)
 
-        if not user:
-            logger.warning("User not found for userid: %s", userid)
-            return Response({"Message": "User not Found!!!!"})
+        # if not user:
+        #     logger.warning("User not found for userid: %s", userid)
+        #     return Response({"Message": "User not Found!!!!"})
 
         product_id = request.data.get("product_id")
 
