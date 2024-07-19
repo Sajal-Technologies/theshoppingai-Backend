@@ -1231,6 +1231,16 @@ class OxylabSearchView(APIView):
             for i in range(len(data['results'])):
                 organic_results = data['results'][i]['content']['results']['organic']
                 for item in organic_results:
+                    #-------------------Adding "https://www.google.com" to main url---------------------------------------
+                    try:
+                        # Fix the merchant URL if it exists
+                        if 'url' in item:
+                            item['url'] = "https://www.google.com" + item['url']
+                    except Exception as e:
+                        logger.error(f"Error parsing URL for item: {e}")
+                        print(f"Error parsing URL for item: {e}")
+                    #-------------------Adding "https://www.google.com" to main url---------------------------------------
+
                     try:
                         # Fix the merchant URL if it exists
                         if 'merchant' in item and 'url' in item['merchant']:
@@ -1256,7 +1266,17 @@ class OxylabSearchView(APIView):
         if 'url' in query_params:
             return query_params['url'][0]
         return encoded_url
+    
+    # @staticmethod
+    # def fix_main_url(encoded_url):
+    #     parsed_url = urlparse(encoded_url)
+    #     query_params = parse_qs(parsed_url.query)
+    #     if 'url' in query_params:
+    #         return "https://www.google.com"+query_params['url']
+    #     return encoded_url
 
+
+# "https://www.google.com"
 
 
 
