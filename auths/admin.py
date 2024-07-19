@@ -18,6 +18,9 @@ class CustomUserAdmin(UserAdmin):
 class oxylab_accountAdmin(admin.ModelAdmin):
     list_display = ["id", "username", 'status', 'password']
 
+class search_historyAdmin(admin.ModelAdmin):
+    list_display = ["id", "query", 'created', 'updated']
 
+admin.site.register(search_history, search_historyAdmin)
 admin.site.register(CustomUser, CustomUserAdmin)
 admin.site.register(oxylab_account, oxylab_accountAdmin)

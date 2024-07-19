@@ -89,6 +89,18 @@ class oxylab_account(TimeStampModel):
     busy = models.BooleanField(default=False)
     status = models.CharField(max_length=25,choices=STATUS,default='ACTIVE')
 
+class search_history(TimeStampModel):
+    query = models.CharField(max_length=300)
+    product_id = models.CharField(max_length=300)
+    google_url = models.URLField()
+    seller_name = models.CharField(max_length=250)
+    seller_url = models.URLField()
+    price = models.IntegerField()
+    product_title = models.TextField()
+    rating = models.FloatField(null=True,blank=True)
+    reviews_count = models.IntegerField(null=True,blank=True)
+    product_pic = models.URLField(null=True,blank=True)
+
 #-----------------------------------------------------Code BY Adil-------------------------------------------------------------
 
 

@@ -1149,6 +1149,7 @@ class ProductSearchView(APIView):
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s %(message)s')
 
+from django.db import transaction
 
 class OxylabSearchView(APIView):
     def post(self, request):
@@ -1227,6 +1228,7 @@ class OxylabSearchView(APIView):
             # Print prettified response to stdout.
             data = response.json()
             shopping_data = []
+            search_history_entries = []
 
             for i in range(len(data['results'])):
                 organic_results = data['results'][i]['content']['results']['organic']
@@ -1251,8 +1253,75 @@ class OxylabSearchView(APIView):
                         # If there is an error, leave the URL as it is
                     shopping_data.append(item)
 
+                    # Check if product_id is within the 64-bit integer range
+                    product_id = item.get('product_id')
+                    if product_id is None or product_id =="":
+                        logger.error(f"Invalid product_id: {product_id}")
+                        continue
+
+                    search_history_entries.append(
+                        search_history(
+                            query=query,
+                            product_id=product_id,
+                            google_url=item['url'],
+                            seller_name=item['merchant']['name'],
+                            seller_url=item['merchant']['url'],
+                            price=item['price'],
+                            product_title=item['title'],
+                            rating=item.get('rating'),
+                            reviews_count=item.get('reviews_count'),
+                            product_pic=item.get('thumbnail')
+                        )
+                    )
+
+            # with transaction.atomic():
+            #     search_history.objects.bulk_create(search_history_entries)
+
+             # Log the number of entries to be created
+            logger.info(f"Total search_history entries to create: {len(search_history_entries)}")
+
+            # Insert entries one by one with error handling
+            with transaction.atomic():
+                for entry in search_history_entries:
+                    try:
+                        entry.save()
+                    except Exception as e:
+                        logger.error(f"Error creating search_history entry: {e}")
+
             print(response.text)
             logger.debug(f"Received API response: {response.text}")
+
+            # for row in shopping_data:
+            #     search_history.objects.create(
+            #         query = query,
+            #         product_id = row['product_id'],
+            #         google_url = row['url'],
+            #         seller_name = row['merchant']['name'],
+            #         seller_url = row['merchant']['url'],
+            #         price = row['price'],
+            #         product_title = row['title'],
+            #         rating = row['rating'],
+            #         reviews_count = row['reviews_count'],
+            #         product_pic = row['thumbnail']
+            #     )
+
+            # for row in shopping_data:
+            #     try:
+            #         logger.debug(f"Creating search_history entry for product_id: {row['product_id']}")
+            #         search_history.objects.create(
+            #             query=query,
+            #             product_id=row['product_id'],
+            #             google_url=row['url'],
+            #             seller_name=row['merchant']['name'],
+            #             seller_url=row['merchant']['url'],
+            #             price=row['price'],
+            #             product_title=row['title'],
+            #             rating=row.get('rating'),  # Use .get to handle missing keys
+            #             reviews_count=row.get('reviews_count'),  # Use .get to handle missing keys
+            #             product_pic=row.get('thumbnail')  # Use .get to handle missing keys
+            #         )
+            #     except Exception as e:
+            #         logger.error(f"Error creating search_history entry: {e}")
 
             return Response({'Message': 'Fetch the Product data Successfully', "Product_data": shopping_data}, status=status.HTTP_200_OK)
         except Exception as e:
