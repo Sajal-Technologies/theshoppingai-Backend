@@ -170,7 +170,7 @@ class UserEmailVerificationView(APIView):
                 #     memebership_id=Mem.id
                 #     return Response({'token':token,'verified' : user.is_user_verified, 'Message':'Email verified successfully.', "membership_id":memebership_id, "membership":user.membership.name, "membership_expiry_date":str(user.membership_expiry), "subscription_status":user.is_subscribed, "stripe_customer_id":user.stripe_customer_id}, status=status.HTTP_200_OK)
                 # else:
-                return Response({'token':token,'verified' : user.is_user_verified, 'Message':'Email verified successfully.', "membership_id":None, "membership":None, "membership_expiry_date":None, "subscription_status":user.is_subscribed, "stripe_customer_id":user.stripe_customer_id}, status=status.HTTP_200_OK)
+                return Response({'token':token,'verified' : user.is_user_verified, 'username' : user.username, 'Message':'Email verified successfully.', "membership_id":None, "membership":None, "membership_expiry_date":None, "subscription_status":user.is_subscribed, "stripe_customer_id":user.stripe_customer_id}, status=status.HTTP_200_OK)
                 # return Response({'token':token,'Message': 'Email verified successfully.'}, status=status.HTTP_200_OK)
             else:
                 return Response({'Message': 'Entered Verification code is incorrect.'}, status=status.HTTP_401_UNAUTHORIZED)
@@ -1299,47 +1299,54 @@ class OxylabProductDetailView(APIView):
             'parse': True
         }
 
-        # Get response.
-        response = requests.request(
-            'POST',
-            'https://realtime.oxylabs.io/v1/queries',
-            auth=(username, password),
-            json=payload,
-        )
-
-        data =response.json()#['results'][0]['content']
-
-        # URL prefix to prepend
-        url_prefix = 'https://www.google.com'
-
-        # Update seller links
-        if 'pricing' in data['results'][0]['content'] and 'online' in data['results'][0]['content']['pricing']:
-            for seller_info in data['results'][0]['content']['pricing']['online']:
-                seller_link = seller_info.get('seller_link')
-                if seller_link and seller_link.startswith('/'):
-                    seller_info['seller_link'] = url_prefix + seller_link
-
-        # Update review URLs for 1, 3, 4, and 5 stars
-        if 'reviews' in data['results'][0]['content'] and 'reviews_by_stars' in data['results'][0]['content']['reviews']:
-            for rating in ['1', '3', '4', '5']:
-                reviews_data = data['results'][0]['content']['reviews']['reviews_by_stars'].get(rating)
-                if reviews_data:
-                    review_url = reviews_data.get('url')
-                    if review_url and review_url.startswith('/'):
-                        reviews_data['url'] = url_prefix + review_url
-
-        # Convert the updated data back to JSON format if needed
-        # updated_json = json.dumps(data, indent=2,ensure_ascii=False)
-
-        # Print prettified response to stdout.
-        pprint(data)
         try:
-            # data = response.json()
-            prod_data = data['results'][0]['content']
-            # print(data)
-            logger.debug(f"Received API response: {prod_data}")
 
-            return Response({'Message': 'Fetch the Product detail Successfully', "Product_detail": prod_data}, status=status.HTTP_200_OK)
+            # Get response.
+            response = requests.request(
+                'POST',
+                'https://realtime.oxylabs.io/v1/queries',
+                auth=(username, password),
+                json=payload,
+            )
+            
+            data =response.json()#['results'][0]['content']
+
+            print(data)
+
+            # URL prefix to prepend
+            url_prefix = 'https://www.google.com'
+
+            # Update seller links
+            if 'pricing' in data['results'][0]['content'] and 'online' in data['results'][0]['content']['pricing']:
+                for seller_info in data['results'][0]['content']['pricing']['online']:
+                    seller_link = seller_info.get('seller_link')
+                    if seller_link and seller_link.startswith('/'):
+                        seller_info['seller_link'] = url_prefix + seller_link
+
+            # Update review URLs for 1, 3, 4, and 5 stars
+            if 'reviews' in data['results'][0]['content'] and 'reviews_by_stars' in data['results'][0]['content']['reviews']:
+                for rating in ['1', '3', '4', '5']:
+                    reviews_data = data['results'][0]['content']['reviews']['reviews_by_stars'].get(rating)
+                    if reviews_data:
+                        review_url = reviews_data.get('url')
+                        if review_url and review_url.startswith('/'):
+                            reviews_data['url'] = url_prefix + review_url
+
+            # Convert the updated data back to JSON format if needed
+            # updated_json = json.dumps(data, indent=2,ensure_ascii=False)
+
+            # Print prettified response to stdout.
+            pprint(data)
+            try:
+                # data = response.json()
+                prod_data = data['results'][0]['content']
+                # print(data)
+                logger.debug(f"Received API response: {prod_data}")
+
+                return Response({'Message': 'Fetch the Product detail Successfully', "Product_detail": prod_data}, status=status.HTTP_200_OK)
+            except Exception as e:
+                logger.error(f'Unable to fetch the Product detail: {str(e)}')
+                return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception as e:
-            logger.error(f'Unable to fetch the Product detail: {str(e)}')
-            return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                logger.error(f'Unable to fetch the Product detail: {str(e)}')
+                return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
