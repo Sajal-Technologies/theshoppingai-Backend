@@ -1207,6 +1207,7 @@ class OxylabSearchView(APIView):
                 'source': 'google_shopping_search',
                 'domain': 'co.in',
                 'query': query_main,
+                "start_page":1,
                 'pages': 4,
                 'parse': True,
                 # "currency": "EUR",
@@ -1445,33 +1446,106 @@ class OxylabProductDetailView(APIView):
 class AddtoCartView(APIView):
     def post(self,request):
 
-        user_id = get_user_id_from_token()
+        user_id = get_user_id_from_token(request)
         user = CustomUser.objects.filter(id=user_id).first()    
 
         if not user:
             # logger.warning("User not found for userid: %s", userid)
             return Response({"Message": "User not Found!!!!"})
 
-        data = request.data
+        products_id = request.data.get('product_id') 
+
+        if not products_id or not request.data.get('product_id'):
+            return Response({"Message":"Product not Found!!!"},status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            oxy_account = oxylab_account.objects.get(id=1)
+            username = oxy_account.username
+            password = oxy_account.password
+        except oxylab_account.DoesNotExist:
+            return Response({'Message': 'Error in oxylabs credential '}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+        payload = {
+            'source': 'google_shopping_product',
+            'domain': 'co.in',
+            'query': products_id, # Product ID
+            'parse': True
+        }
+
+        try:
+
+            # Get response.
+            response = requests.request(
+                'POST',
+                'https://realtime.oxylabs.io/v1/queries',
+                auth=(username, password),
+                json=payload,
+            )
+            
+            data =response.json()#['results'][0]['content']
+
+            # print(data)
+
+            # URL prefix to prepend
+            url_prefix = 'https://www.google.com'
+
+            # Update seller links
+            if 'pricing' in data['results'][0]['content'] and 'online' in data['results'][0]['content']['pricing']:
+                for seller_info in data['results'][0]['content']['pricing']['online']:
+                    seller_link = seller_info.get('seller_link')
+                    if seller_link and seller_link.startswith('/'):
+                        seller_info['seller_link'] = str(seller_link).replace("/url?q=",'')#url_prefix + seller_link
+
+            # Update review URLs for 1, 3, 4, and 5 stars
+            if 'reviews' in data['results'][0]['content'] and 'reviews_by_stars' in data['results'][0]['content']['reviews']:
+                for rating in ['1', '3', '4', '5']:
+                    reviews_data = data['results'][0]['content']['reviews']['reviews_by_stars'].get(rating)
+                    if reviews_data:
+                        review_url = reviews_data.get('url')
+                        if review_url and review_url.startswith('/'):
+                            reviews_data['url'] = url_prefix + review_url
+
+            # pprint(data)
+            response_data = data['results'][0]['content']
+            # response_data = data
+        except Exception as e:
+                return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        print("Product data fetched Succesfully")
+
         try:
             quantity = request.data.get("quantity",1)
-            product_id = request.data.get("product_id")
-            google_shopping_url = data['url']
-            product_name = data['title']
-            product_image = data['images']['full_size'][0]
-            price = data['pricing']['online'][0]['price']
-            seller_link = data['pricing']['online'][0]['seller_link']
+            # product_id = products_id
+            google_shopping_url = response_data['url']
+            product_name = response_data['title']
+            product_image = response_data['images']['full_size'][0]
+            price = response_data['pricing']['online'][0]['price']
+            seller_link = response_data['pricing']['online'][0]['seller_link']
             # seller_logo = data['url']
-            seller_name = data['pricing']['online'][0]['seller']
+            seller_name = response_data['pricing']['online'][0]['seller']
         except Exception as e:
             return Response({"Message":f"Error Occured: {str(e)}"})
+        
+        print("Product details fetched Succesfully")
+
+        print(type(user),user)
+        print(type(quantity),quantity)
+        print(type(products_id),products_id)
+        print(type(google_shopping_url),google_shopping_url)
+        print(type(product_name),product_name)
+        print(type(product_image),product_image)
+        print(type(price),price)
+        print(type(seller_link),seller_link)
+        print(type(seller_name),seller_name)
 
         try:
 
             cart.objects.create(
             user= user,
             quantity = quantity, # IT SHOULD NOT BE ADDED TO CART AS WE DONT HAVE ACCESS TO SELLER WEBSITE WE ONLY AHVE LINK
-            product_id = product_id,
+            product_id = products_id,
             google_shopping_url = google_shopping_url,
             product_name = product_name,
             product_image = product_image,
@@ -1481,14 +1555,14 @@ class AddtoCartView(APIView):
             )
 
             return Response({"Message":"Product added to cart"},status=status.HTTP_201_CREATED)
-        except:
-            return Response({"Message":"Failed to add product to cart"},status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"Message":f"Failed to add product to cart: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
         
 
 class DeletefromCartView(APIView):
     def post(self,request):
 
-        user_id = get_user_id_from_token()
+        user_id = get_user_id_from_token(request)
         user = CustomUser.objects.filter(id=user_id).first()    
 
         if not user:
@@ -1501,24 +1575,32 @@ class DeletefromCartView(APIView):
         if not cart_id or not request.data.get("cart_id"):
             return Response({"Message": "Cart id not Found!!!!"})
 
+        # try:
+
+            # kart = cart.objects.get(
+            # user= user,
+            # id = cart_id
+            # )
+            # if not kart:
+            #     return Response({"Message":"cart not found"},status=status.HTTP_404_NOT_FOUND)
+
+            # kart.delete()
+
         try:
-
-            kart = cart.objects.get(
-            user= user,
-            id = cart_id
-            )
-
+            kart = cart.objects.get(user=user, id=cart_id)
             kart.delete()
+            return Response({"Message": "Product removed from cart"}, status=status.HTTP_204_NO_CONTENT)
 
-            return Response({"Message":"Product removed from cart"},status=status.HTTP_201_CREATED)
-        except:
-            return Response({"Message":"Failed to remove product from cart"},status=status.HTTP_400_BAD_REQUEST)
+        except ObjectDoesNotExist:
+            return Response({"Message": "Cart item not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"Message":f"Failed to remove Cart item: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
         
 
 class UpdateproductCartView(APIView):
     def post(self,request):
 
-        user_id = get_user_id_from_token()
+        user_id = get_user_id_from_token(request)
         user = CustomUser.objects.filter(id=user_id).first()    
 
         if not user:
@@ -1543,10 +1625,14 @@ class UpdateproductCartView(APIView):
             id = cart_id
             )
 
+            # if not kart:
+            #     return Response({"Message":"Cart item not found"},status=status.HTTP_404_NOT_FOUND)
+
             kart.quantity = quantity
 
             kart.save()
-
-            return Response({"Message":"Product in cart Updated Succesfully"},status=status.HTTP_201_CREATED)
+            return Response({"Message":"Cart item Updated Succesfully"},status=status.HTTP_201_CREATED)
+        except ObjectDoesNotExist:
+            return Response({"Message": "Cart item not found"}, status=status.HTTP_404_NOT_FOUND)
         except:
-            return Response({"Message":"Failed to update product in cart"},status=status.HTTP_400_BAD_REQUEST)
+            return Response({"Message":"Failed to update Cart item"},status=status.HTTP_400_BAD_REQUEST)

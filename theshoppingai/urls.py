@@ -36,5 +36,11 @@ urlpatterns = [
 
     path('api/oxy-search-product/', OxylabSearchView.as_view(), name='api-oxylabSearchView'), 
 
-    path('api/oxy-product-detail/', OxylabProductDetailView.as_view(), name='api-oxylabSearchView'), 
+    path('api/oxy-product-detail/', OxylabProductDetailView.as_view(), name='api-OxylabProductDetailView'), 
+
+    path('api/add-to-cart/', AddtoCartView.as_view(), name='api-AddtoCartView'), 
+
+    path('api/delete-from-cart/', DeletefromCartView.as_view(), name='api-DeletefromCartView'), 
+
+    path('api/update-cart/', UpdateproductCartView.as_view(), name='api-UpdateproductCartView'), 
 ]
