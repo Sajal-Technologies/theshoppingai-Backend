@@ -170,7 +170,7 @@ class UserEmailVerificationView(APIView):
                 #     memebership_id=Mem.id
                 #     return Response({'token':token,'verified' : user.is_user_verified, 'Message':'Email verified successfully.', "membership_id":memebership_id, "membership":user.membership.name, "membership_expiry_date":str(user.membership_expiry), "subscription_status":user.is_subscribed, "stripe_customer_id":user.stripe_customer_id}, status=status.HTTP_200_OK)
                 # else:
-                return Response({'token':token,'verified' : user.is_user_verified, 'username' : user.username, 'Message':'Email verified successfully.', "membership_id":None, "membership":None, "membership_expiry_date":None, "subscription_status":user.is_subscribed, "stripe_customer_id":user.stripe_customer_id}, status=status.HTTP_200_OK)
+                return Response({'token':token,'verified' : user.is_user_verified, 'user name' : user.name, 'Message':'Email verified successfully.', "membership_id":None, "membership":None, "membership_expiry_date":None, "subscription_status":user.is_subscribed, "stripe_customer_id":user.stripe_customer_id}, status=status.HTTP_200_OK)
                 # return Response({'token':token,'Message': 'Email verified successfully.'}, status=status.HTTP_200_OK)
             else:
                 return Response({'Message': 'Entered Verification code is incorrect.'}, status=status.HTTP_401_UNAUTHORIZED)
@@ -1439,3 +1439,114 @@ class OxylabProductDetailView(APIView):
         except Exception as e:
                 logger.error(f'Unable to fetch the Product detail: {str(e)}')
                 return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+
+class AddtoCartView(APIView):
+    def post(self,request):
+
+        user_id = get_user_id_from_token()
+        user = CustomUser.objects.filter(id=user_id).first()    
+
+        if not user:
+            # logger.warning("User not found for userid: %s", userid)
+            return Response({"Message": "User not Found!!!!"})
+
+        data = request.data
+        try:
+            quantity = request.data.get("quantity",1)
+            product_id = request.data.get("product_id")
+            google_shopping_url = data['url']
+            product_name = data['title']
+            product_image = data['images']['full_size'][0]
+            price = data['pricing']['online'][0]['price']
+            seller_link = data['pricing']['online'][0]['seller_link']
+            # seller_logo = data['url']
+            seller_name = data['pricing']['online'][0]['seller']
+        except Exception as e:
+            return Response({"Message":f"Error Occured: {str(e)}"})
+
+        try:
+
+            cart.objects.create(
+            user= user,
+            quantity = quantity, # IT SHOULD NOT BE ADDED TO CART AS WE DONT HAVE ACCESS TO SELLER WEBSITE WE ONLY AHVE LINK
+            product_id = product_id,
+            google_shopping_url = google_shopping_url,
+            product_name = product_name,
+            product_image = product_image,
+            price = price,
+            seller_link = seller_link,
+            seller_name = seller_name
+            )
+
+            return Response({"Message":"Product added to cart"},status=status.HTTP_201_CREATED)
+        except:
+            return Response({"Message":"Failed to add product to cart"},status=status.HTTP_400_BAD_REQUEST)
+        
+
+class DeletefromCartView(APIView):
+    def post(self,request):
+
+        user_id = get_user_id_from_token()
+        user = CustomUser.objects.filter(id=user_id).first()    
+
+        if not user:
+            # logger.warning("User not found for userid: %s", userid)
+            return Response({"Message": "User not Found!!!!"})
+        
+
+        cart_id = request.data.get("cart_id")
+
+        if not cart_id or not request.data.get("cart_id"):
+            return Response({"Message": "Cart id not Found!!!!"})
+
+        try:
+
+            kart = cart.objects.get(
+            user= user,
+            id = cart_id
+            )
+
+            kart.delete()
+
+            return Response({"Message":"Product removed from cart"},status=status.HTTP_201_CREATED)
+        except:
+            return Response({"Message":"Failed to remove product from cart"},status=status.HTTP_400_BAD_REQUEST)
+        
+
+class UpdateproductCartView(APIView):
+    def post(self,request):
+
+        user_id = get_user_id_from_token()
+        user = CustomUser.objects.filter(id=user_id).first()    
+
+        if not user:
+            # logger.warning("User not found for userid: %s", userid)
+            return Response({"Message": "User not Found!!!!"})
+        
+
+        cart_id = request.data.get("cart_id")
+
+        if not cart_id or not request.data.get("cart_id"):
+            return Response({"Message": "Cart id not Found!!!!"})
+        
+        quantity = request.data.get("quantity")
+
+        if not quantity or not request.data.get("quantity"):
+            return Response({"Message": "quantity not Found!!!!"})
+
+        try:
+
+            kart = cart.objects.get(
+            user= user,
+            id = cart_id
+            )
+
+            kart.quantity = quantity
+
+            kart.save()
+
+            return Response({"Message":"Product in cart Updated Succesfully"},status=status.HTTP_201_CREATED)
+        except:
+            return Response({"Message":"Failed to update product in cart"},status=status.HTTP_400_BAD_REQUEST)

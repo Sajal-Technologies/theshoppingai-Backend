@@ -21,6 +21,10 @@ class oxylab_accountAdmin(admin.ModelAdmin):
 class search_historyAdmin(admin.ModelAdmin):
     list_display = ["id", "query", 'created', 'updated']
 
+class cartAdmin(admin.ModelAdmin):
+    list_display = ["id", "user", 'quantity', 'product_name','price', 'seller_name']
+
+admin.site.register(cart, cartAdmin)
 admin.site.register(search_history, search_historyAdmin)
 admin.site.register(CustomUser, CustomUserAdmin)
 admin.site.register(oxylab_account, oxylab_accountAdmin)

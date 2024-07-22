@@ -95,12 +95,23 @@ class search_history(TimeStampModel):
     google_url = models.URLField()
     seller_name = models.CharField(max_length=250)
     seller_url = models.URLField()
-    price = models.IntegerField()
+    price = models.FloatField()
     product_title = models.TextField()
     rating = models.FloatField(null=True,blank=True)
     reviews_count = models.IntegerField(null=True,blank=True)
     product_pic = models.URLField(null=True,blank=True)
 
+class cart(TimeStampModel):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    product_id = models.CharField(max_length=300)
+    quantity = models.IntegerField()
+    product_name = models.TextField()
+    product_image = models.URLField()
+    price = models.FloatField()
+    google_shopping_url = models.URLField()
+    seller_link = models.URLField()
+    seller_logo = models.URLField(null=True,blank=True)
+    seller_name = models.CharField(max_length=250)
 #-----------------------------------------------------Code BY Adil-------------------------------------------------------------
 
 
