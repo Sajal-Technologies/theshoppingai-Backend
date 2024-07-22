@@ -24,6 +24,10 @@ class search_historyAdmin(admin.ModelAdmin):
 class cartAdmin(admin.ModelAdmin):
     list_display = ["id", "user", 'quantity', 'product_name','price', 'seller_name']
 
+class saveforlaterAdmin(admin.ModelAdmin):
+    list_display = ["id", "user", 'quantity', 'product_name','price', 'seller_name']    
+
+admin.site.register(saveforlater, saveforlaterAdmin)
 admin.site.register(cart, cartAdmin)
 admin.site.register(search_history, search_historyAdmin)
 admin.site.register(CustomUser, CustomUserAdmin)

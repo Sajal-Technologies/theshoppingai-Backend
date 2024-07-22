@@ -1636,3 +1636,128 @@ class UpdateproductCartView(APIView):
             return Response({"Message": "Cart item not found"}, status=status.HTTP_404_NOT_FOUND)
         except:
             return Response({"Message":"Failed to update Cart item"},status=status.HTTP_400_BAD_REQUEST)
+        
+
+
+class Addtosaveforlater(APIView):
+    def post(self,request):
+
+        user_id = get_user_id_from_token(request)
+        user = CustomUser.objects.filter(id=user_id).first()    
+
+        if not user:
+            return Response({"Message": "User not Found!!!!"})
+        
+
+        cart_id = request.data.get("cart_id")
+
+        if not cart_id or not request.data.get("cart_id"):
+            return Response({"Message": "Cart id not Found!!!!"})
+
+        try:
+            # get the cart object
+            kart = cart.objects.get(user=user, id=cart_id)
+
+            # Create the saveforlater object with fields from cart
+            save_for_later_data = {
+                'user': user,
+                'product_id': kart.product_id,
+                'quantity': kart.quantity,
+                'product_name': kart.product_name,
+                'product_image': kart.product_image,
+                'price': kart.price,
+                'google_shopping_url': kart.google_shopping_url,
+                'seller_link': kart.seller_link,
+                'seller_logo': kart.seller_logo,
+                'seller_name': kart.seller_name
+            }
+
+            # Create saveforlater object
+            saveforlater.objects.create(**save_for_later_data)
+
+
+            # Create the saveforlater object
+            # saveforlater.objects.create(kart)
+            # delete the cart object
+            kart.delete()
+            return Response({"Message": "Product has been Saved For Later"}, status=status.HTTP_204_NO_CONTENT)
+
+        except ObjectDoesNotExist:
+            return Response({"Message": "Cart item not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"Message":f"Failed to move product to Saved For Later: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class Deletefromsaveforlater(APIView):
+    def post(self,request):
+
+        user_id = get_user_id_from_token(request)
+        user = CustomUser.objects.filter(id=user_id).first()    
+
+        if not user:
+            return Response({"Message": "User not Found!!!!"})
+        
+        savelater_id = request.data.get("savelater_id")
+        if not savelater_id or not request.data.get("savelater_id"):
+            return Response({"Message": "savelater id not Found!!!!"})
+
+        try:
+            item = saveforlater.objects.get(user=user, id=savelater_id)
+            item.delete()
+            return Response({"Message": "Product removed from Save for later"}, status=status.HTTP_204_NO_CONTENT)
+
+        except ObjectDoesNotExist:
+            return Response({"Message": "Save for later item not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"Message":f"Failed to remove item from Save for later: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
+        
+
+class MovetoCartfromsaveforlater(APIView):
+    def post(self,request):
+
+        user_id = get_user_id_from_token(request)
+        user = CustomUser.objects.filter(id=user_id).first()    
+
+        if not user:
+            return Response({"Message": "User not Found!!!!"})
+        
+
+        savelater_id = request.data.get("savelater_id")
+
+        if not savelater_id or not request.data.get("savelater_id"):
+            return Response({"Message": "savelater id not Found!!!!"})
+
+        try:
+            # get the cart object
+            save_for_later = saveforlater.objects.get(user=user, id=savelater_id)
+
+            # Create the saveforlater object with fields from cart
+            kart = {
+                'user': user,
+                'product_id': save_for_later.product_id,
+                'quantity': save_for_later.quantity,
+                'product_name': save_for_later.product_name,
+                'product_image': save_for_later.product_image,
+                'price': save_for_later.price,
+                'google_shopping_url': save_for_later.google_shopping_url,
+                'seller_link': save_for_later.seller_link,
+                'seller_logo': save_for_later.seller_logo,
+                'seller_name': save_for_later.seller_name
+            }
+
+            # Create saveforlater object
+            cart.objects.create(**kart)
+
+
+            # Create the saveforlater object
+            # saveforlater.objects.create(kart)
+            # delete the cart object
+            save_for_later.delete()
+            return Response({"Message": "Product Moved to Cart Successfully"}, status=status.HTTP_204_NO_CONTENT)
+
+        except ObjectDoesNotExist:
+            return Response({"Message": "saveforlater item not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"Message":f"Failed to move product to Cart: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
+
