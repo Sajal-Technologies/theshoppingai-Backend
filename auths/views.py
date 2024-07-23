@@ -22,6 +22,8 @@ import random
 from django.core.validators import validate_email
 import threading
 from queue import Queue
+from django.contrib.sessions.models import Session
+# from django.utils.http import http_date
 # Create your views here.
 
 
@@ -1789,7 +1791,9 @@ class getallcartitems(APIView):
                         'google_shopping_url': cart_item.google_shopping_url,
                         'seller_link': cart_item.seller_link,
                         'seller_logo': cart_item.seller_logo,
-                        'seller_name': cart_item.seller_name
+                        'seller_name': cart_item.seller_name,
+                        'clicks Count': cart_item.clicked,
+                        'bought': cart_item.bought
                     }
                 allcart_data.append(tmp)
 
@@ -1836,3 +1840,148 @@ class getallsaveforlateritems(APIView):
             return Response({"Message":f"Failed to Fetch Save later items: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
 
 
+class BuyProduct(APIView):
+    def post(self, request):
+        user_id = get_user_id_from_token(request)
+        user = CustomUser.objects.filter(id=user_id).first()
+
+        if not user:
+            return Response({"Message": "User not found!"}, status=status.HTTP_404_NOT_FOUND)
+        
+        cart_id = request.data.get('cart_id')
+        if not cart_id:
+            return Response({"Message": "cart_id not found!"}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            cart_item = cart.objects.filter(id = cart_id, user=user).first()
+
+            if not cart_item:
+                return Response({"Message": "No Product Found"}, status=status.HTTP_404_NOT_FOUND)
+            # cart_item = get_object_or_404(Cart, id=cart_id, user=user)
+            cart_item.clicked += 1
+            cart_item.save()
+            # Store the cart_id in the session
+            request.session['cart_id'] = cart_id
+            return Response({'redirect_url': cart_item.seller_link}, status=status.HTTP_200_OK)
+        except ObjectDoesNotExist:
+            return Response({"Message": "No Product Found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"Message":f"Error Occured While pressing Buy Button: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+# class ConfirmPurchase(APIView):
+#     def post(self, request):
+#         user_id = get_user_id_from_token(request)
+#         user = CustomUser.objects.filter(id=user_id).first()
+
+#         if not user:
+#             return Response({"Message": "User not found!"}, status=status.HTTP_404_NOT_FOUND)
+
+#         cart_id = request.session.get('cart_id')
+#         if not cart_id:
+#             return Response({"Message": "No cart_id in session"}, status=status.HTTP_400_BAD_REQUEST)
+        
+#         try:
+#             try:
+#                 cart_item = cart.objects.get(id=cart_id, user=user)
+#             except cart.DoesNotExist:
+#                 return Response({"Message": "No Product Found"}, status=status.HTTP_404_NOT_FOUND)
+
+#             if cart_item:
+
+#                 # cart_item = get_object_or_404(Cart, id=cart_id, user=user)
+#                 bought_str = request.data.get('bought')
+
+#                 if bought_str == 'yes':
+#                     cart_item.bought = True
+#                 else:
+#                     cart_item.bought = False
+#                     del request.session['cart_id']
+#                     return Response({'Message': 'No Product Bought'}, status=status.HTTP_200_OK)
+
+#                 # cart_item.bought = bought
+#                 cart_item.save()
+                
+#                 tmp = {
+#                             # 'id': cart_item.id,
+#                             'product_id': cart_item.product_id,
+#                             'quantity': cart_item.quantity,
+#                             'product_name': cart_item.product_name,
+#                             'product_image': cart_item.product_image,
+#                             'price': cart_item.price,
+#                             'google_shopping_url': cart_item.google_shopping_url,
+#                             'seller_link': cart_item.seller_link,
+#                             'seller_logo': cart_item.seller_logo,
+#                             'seller_name': cart_item.seller_name,
+#                             'clicked': cart_item.clicked,
+#                             'bought': cart_item.bought
+#                         }
+#                 orderhistory.objects.create(**tmp,user=user)
+#                 if cart_item.bought == True:
+#                     cart_item.delete()
+#                 # Clear cart_id from session
+#                 del request.session['cart_id']
+
+
+#                 return Response({'Message': 'Bought status updated'}, status=status.HTTP_200_OK)
+#             else:
+#                 return Response({"Message": "No Product Found"}, status=status.HTTP_404_NOT_FOUND)
+#         except ObjectDoesNotExist:
+#             return Response({"Message": "No Product Found"}, status=status.HTTP_404_NOT_FOUND)
+#         except Exception as e:
+#             return Response({"Message":f"Error Occured While updating Bought status: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class ConfirmPurchase(APIView):
+    def post(self, request):
+        user_id = get_user_id_from_token(request)
+        user = CustomUser.objects.filter(id=user_id).first()
+
+        if not user:
+            return Response({"Message": "User not found!"}, status=status.HTTP_404_NOT_FOUND)
+
+        cart_id = request.session.get('cart_id')
+        if not cart_id:
+            return Response({"Message": "No cart_id in session"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            cart_item = cart.objects.get(id=cart_id, user=user)
+        except cart.DoesNotExist:
+            return Response({"Message": "No Product Found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Retrieve and validate 'bought' status
+        bought_str = request.data.get('bought')
+        if bought_str not in ['yes', 'no']:
+            return Response({"Message": "Invalid value for 'bought'"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Update the bought status
+        cart_item.bought = (bought_str == 'yes')
+        cart_item.save()
+
+        # Store the cart item in OrderHistory
+        tmp = {
+            'product_id': cart_item.product_id,
+            'quantity': cart_item.quantity,
+            'product_name': cart_item.product_name,
+            'product_image': cart_item.product_image,
+            'price': cart_item.price,
+            'google_shopping_url': cart_item.google_shopping_url,
+            'seller_link': cart_item.seller_link,
+            'seller_logo': cart_item.seller_logo,
+            'seller_name': cart_item.seller_name,
+            'clicked': cart_item.clicked,
+            'bought': cart_item.bought
+        }
+        orderhistory.objects.create(**tmp, user=user)
+
+        # If the product was bought, delete the cart item
+        if cart_item.bought:
+            cart_item.delete()
+
+        # Clear cart_id from session
+        del request.session['cart_id']
+
+        return Response({'Message': 'Bought status updated'}, status=status.HTTP_200_OK)

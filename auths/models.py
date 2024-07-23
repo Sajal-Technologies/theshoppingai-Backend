@@ -112,6 +112,8 @@ class cart(TimeStampModel):
     seller_link = models.URLField()
     seller_logo = models.URLField(null=True,blank=True)
     seller_name = models.CharField(max_length=250)
+    clicked = models.IntegerField(default=0)  # Field to track the number of clicks
+    bought = models.BooleanField(default=False)  # Field to track if the product was bought
 
 class saveforlater(TimeStampModel):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
@@ -124,6 +126,20 @@ class saveforlater(TimeStampModel):
     seller_link = models.URLField()
     seller_logo = models.URLField(null=True,blank=True)
     seller_name = models.CharField(max_length=250)    
+
+class orderhistory(TimeStampModel):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    product_id = models.CharField(max_length=300)
+    quantity = models.IntegerField()
+    product_name = models.TextField()
+    product_image = models.URLField()
+    price = models.FloatField()
+    google_shopping_url = models.URLField()
+    seller_link = models.URLField()
+    seller_logo = models.URLField(null=True,blank=True)
+    seller_name = models.CharField(max_length=250)
+    clicked = models.IntegerField(default=0)  # Field to track the number of clicks
+    bought = models.BooleanField(default=False)  # Field to track if the product was bought    
     
 #-----------------------------------------------------Code BY Adil-------------------------------------------------------------
 
