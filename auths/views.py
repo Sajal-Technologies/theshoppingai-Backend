@@ -1760,4 +1760,79 @@ class MovetoCartfromsaveforlater(APIView):
             return Response({"Message": "saveforlater item not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"Message":f"Failed to move product to Cart: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
+        
+
+
+
+class getallcartitems(APIView):
+    def post(self,request):
+        user_id = get_user_id_from_token(request)
+        user = CustomUser.objects.filter(id = user_id).first()
+
+        if not user:
+            return Response({"Message": "User not Found!!!!"})
+        
+        try:
+            all_cart = cart.objects.filter(user=user)
+
+            allcart_data=[]
+
+            for cart_item in all_cart:
+
+                tmp = {
+                        'id': cart_item.id,
+                        'product_id': cart_item.product_id,
+                        'quantity': cart_item.quantity,
+                        'product_name': cart_item.product_name,
+                        'product_image': cart_item.product_image,
+                        'price': cart_item.price,
+                        'google_shopping_url': cart_item.google_shopping_url,
+                        'seller_link': cart_item.seller_link,
+                        'seller_logo': cart_item.seller_logo,
+                        'seller_name': cart_item.seller_name
+                    }
+                allcart_data.append(tmp)
+
+            return Response({"Message": "All Cart item fetched Successfully","cart_data":allcart_data}, status=status.HTTP_200_OK)
+        except ObjectDoesNotExist:
+            return Response({"Message": "Cart items not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"Message":f"Failed to Fetch Cart items: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
+
+
+class getallsaveforlateritems(APIView):
+    def post(self,request):
+        user_id = get_user_id_from_token(request)
+        user = CustomUser.objects.filter(id = user_id).first()
+
+        if not user:
+            return Response({"Message": "User not Found!!!!"})
+        
+        try:
+            all_savelater = saveforlater.objects.filter(user=user)
+
+            all_savelater_data=[]
+
+            for savelater_item in all_savelater:
+
+                tmp = {
+                        'id': savelater_item.id,
+                        'product_id': savelater_item.product_id,
+                        'quantity': savelater_item.quantity,
+                        'product_name': savelater_item.product_name,
+                        'product_image': savelater_item.product_image,
+                        'price': savelater_item.price,
+                        'google_shopping_url': savelater_item.google_shopping_url,
+                        'seller_link': savelater_item.seller_link,
+                        'seller_logo': savelater_item.seller_logo,
+                        'seller_name': savelater_item.seller_name
+                    }
+                all_savelater_data.append(tmp)
+
+            return Response({"Message": "All save later item fetched Successfully","savelater_data":all_savelater_data}, status=status.HTTP_200_OK)
+        except ObjectDoesNotExist:
+            return Response({"Message": "Save later items not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"Message":f"Failed to Fetch Save later items: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
+
 

@@ -49,4 +49,8 @@ urlpatterns = [
     path('api/delete-from-saveforlater/', Deletefromsaveforlater.as_view(), name='api-Deletefromsaveforlater'), 
 
     path('api/saveforlater-to-cart/', MovetoCartfromsaveforlater.as_view(), name='api-MovetoCartfromsaveforlater'), 
+
+    path('api/get-all-cartitem/', getallcartitems.as_view(), name='api-getallcartitems'), 
+    
+    path('api/get-all-savelateritem/', getallsaveforlateritems.as_view(), name='api-getallsaveforlateritems'), 
 ]
