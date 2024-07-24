@@ -1213,7 +1213,7 @@ class OxylabSearchView(APIView):
                 "start_page":1,
                 'pages': 4,
                 'parse': True,
-                # "currency": "EUR",
+                'locale': 'en',
                 'context': context,
             }
             logger.debug(f"Sending API request with payload: {payload}")
@@ -1389,7 +1389,8 @@ class OxylabProductDetailView(APIView):
             'source': 'google_shopping_product',
             'domain': 'co.in',
             'query': product_id, # Product ID
-            'parse': True
+            'parse': True,
+            'locale': 'en',
         }
 
         try:
