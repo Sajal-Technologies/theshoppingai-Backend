@@ -1475,7 +1475,8 @@ class AddtoCartView(APIView):
             'source': 'google_shopping_product',
             'domain': 'co.in',
             'query': products_id, # Product ID
-            'parse': True
+            'parse': True,
+            'locale': 'en'
         }
 
         try:
