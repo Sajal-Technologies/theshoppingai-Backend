@@ -2009,3 +2009,85 @@ class Admingetallsavelater(APIView):
             return Response({"Message": "Cart items not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"Message":f"Failed to Fetch Cart items: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
+        
+
+class OxylabPricingView(APIView):
+    def post(self,request):
+        logger = logging.getLogger(__name__)  # Get logger for this module
+
+        # Log the incoming request details
+        logger.info(f"Received POST request: {request.data}")
+        # userid = get_user_id_from_token(request)
+        # user = CustomUser.objects.filter(id=userid)
+
+        # if not user:
+        #     logger.warning("User not found for userid: %s", userid)
+        #     return Response({"Message": "User not Found!!!!"})
+
+        product_id = request.data.get("product_id")
+
+        if not product_id:
+            return Response({'Message': 'Please provide product_id to search'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            oxy_account = oxylab_account.objects.get(id=1)
+            username = oxy_account.username
+            password = oxy_account.password
+        except oxylab_account.DoesNotExist:
+            return Response({'Message': 'Error in oxylabs credential '}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+        # Structure payload.
+        payload = {
+            'source': 'google_shopping_pricing',
+            'domain': 'co.in',
+            'query': product_id, # Product ID
+            'parse': True,
+            'locale': 'en',
+        }
+
+        try:
+
+            # Get response.
+            response = requests.request(
+                'POST',
+                'https://realtime.oxylabs.io/v1/queries',
+                auth=(username, password),
+                json=payload,
+            )
+            
+            data =response.json()#['results'][0]['content']
+
+            print(data)
+
+            # URL prefix to prepend
+            url_prefix = 'https://www.google.com'
+
+            # Update seller links
+            if 'pricing' in data['results'][0]['content'] and 'online' in data['results'][0]['content']['pricing']:
+                for seller_info in data['results'][0]['content']['pricing']['online']:
+                    seller_link = seller_info.get('seller_link')
+                    if seller_link and seller_link.startswith('/'):
+                        # seller_info['seller_link'] = url_prefix + seller_link
+                        seller_info['seller_link'] = str(seller_link).replace("/url?q=",'')
+
+            # Convert the updated data back to JSON format if needed
+            # updated_json = json.dumps(data, indent=2,ensure_ascii=False)
+
+            # Print prettified response to stdout.
+            pprint(data)
+            try:
+                # data = response.json()
+                prod_data = data['results'][0]['content']
+                # print(data)
+                logger.debug(f"Received API response: {prod_data}")
+
+                return Response({'Message': 'Fetch the Product detail Successfully', "Product_detail": prod_data}, status=status.HTTP_200_OK)
+            except Exception as e:
+                logger.error(f'Unable to fetch the Product detail: {str(e)}')
+                return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+                logger.error(f'Unable to fetch the Product detail: {str(e)}')
+                return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
