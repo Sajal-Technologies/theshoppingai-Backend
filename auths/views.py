@@ -1767,7 +1767,7 @@ class MovetoCartfromsaveforlater(APIView):
 
 
 class getallcartitems(APIView):
-    def post(self,request):
+    def get(self,request):
         user_id = get_user_id_from_token(request)
         user = CustomUser.objects.filter(id = user_id).first()
 
@@ -1805,7 +1805,7 @@ class getallcartitems(APIView):
 
 
 class getallsaveforlateritems(APIView):
-    def post(self,request):
+    def get(self,request):
         user_id = get_user_id_from_token(request)
         user = CustomUser.objects.filter(id = user_id).first()
 
