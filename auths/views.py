@@ -2059,16 +2059,16 @@ class OxylabPricingView(APIView):
             
             data =response.json()#['results'][0]['content']
 
-            print(data)
+            # print(data)
 
             # URL prefix to prepend
-            url_prefix = 'https://www.google.com'
+            # url_prefix = 'https://www.google.com'
 
             # Update seller links
-            if 'pricing' in data['results'][0]['content'] and 'online' in data['results'][0]['content']['pricing']:
-                for seller_info in data['results'][0]['content']['pricing']['online']:
+            if 'pricing' in data['results'][0]['content']:
+                for seller_info in data['results'][0]['content']['pricing']:
                     seller_link = seller_info.get('seller_link')
-                    if seller_link and seller_link.startswith('/'):
+                    if seller_link and seller_link.startswith('/url?q='):
                         # seller_info['seller_link'] = url_prefix + seller_link
                         seller_info['seller_link'] = str(seller_link).replace("/url?q=",'')
 
@@ -2076,7 +2076,7 @@ class OxylabPricingView(APIView):
             # updated_json = json.dumps(data, indent=2,ensure_ascii=False)
 
             # Print prettified response to stdout.
-            pprint(data)
+            # pprint(data)
             try:
                 # data = response.json()
                 prod_data = data['results'][0]['content']
