@@ -56,4 +56,9 @@ urlpatterns = [
 
     path('api/buy_product/', BuyProduct.as_view(), name='buy_product'),
     path('api/confirm_purchase/', ConfirmPurchase.as_view(), name='confirm_purchase'),
+
+
+    path('api/admin/get-all-cart/', Admingetallcart.as_view(), name='Admingetallcart'),
+
+    path('api/admin/get-all-savelateritem/', Admingetallsavelater.as_view(), name='Admingetallsavelater'),
 ]

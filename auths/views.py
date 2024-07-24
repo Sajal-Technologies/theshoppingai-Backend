@@ -23,6 +23,7 @@ from django.core.validators import validate_email
 import threading
 from queue import Queue
 from django.contrib.sessions.models import Session
+from django.core import serializers
 # from django.utils.http import http_date
 # Create your views here.
 
@@ -1929,3 +1930,78 @@ class ConfirmPurchase(APIView):
         del request.session['cart_id']
 
         return Response({'Message': 'Bought status updated'}, status=status.HTTP_200_OK)
+
+
+class Admingetallcart(APIView):
+    def post(self,request):
+        user_id = get_user_id_from_token(request)
+        user, is_superuser = IsSuperUser(user_id)
+        if not user or not is_superuser:
+            msg = 'could not found the super user'
+            return Response({"Message": msg}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        try:
+            cart_items = cart.objects.all()
+            print(cart_items)
+
+            all_data = []
+            for item in cart_items:
+                tmp = {
+                    'user': item.user.id,
+                    'product_id': item.product_id,
+                    'quantity': item.quantity,
+                    'product_name': item.product_name,
+                    'product_image': item.product_image,
+                    'price': item.price,
+                    'google_shopping_url': item.google_shopping_url,
+                    'seller_link': item.seller_link,
+                    'seller_logo': item.seller_logo,
+                    'seller_name': item.seller_name,
+                    'clicked': item.clicked,
+                    'bought': item.bought
+                }
+                all_data.append(tmp)
+
+            # serialized_cart_items = serializers.serialize('json', cart_items)
+            # cart_data = json.loads(serialized_cart_items)
+            # serialized_cart_items = serializers.serialize('json', cart_items)
+            return JsonResponse({"Message": "All Cart items fetched Successfully", "cart_data": all_data}, status=status.HTTP_200_OK)
+            # return Response({"Message": "All Cart item fetched Successfully","cart_data":cart_items}, status=status.HTTP_200_OK)
+        except ObjectDoesNotExist:
+            return Response({"Message": "Cart items not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"Message":f"Failed to Fetch Cart items: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
+        
+class Admingetallsavelater(APIView):
+    def post(self,request):
+        user_id = get_user_id_from_token(request)
+        user, is_superuser = IsSuperUser(user_id)
+        if not user or not is_superuser:
+            msg = 'could not found the super user'
+            return Response({"Message": msg}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        try:
+            savelater_items = saveforlater.objects.all()
+            print(savelater_items)
+
+            all_data = []
+            for item in savelater_items:
+                tmp = {
+                    'user': item.user.id,
+                    'product_id': item.product_id,
+                    'quantity': item.quantity,
+                    'product_name': item.product_name,
+                    'product_image': item.product_image,
+                    'price': item.price,
+                    'google_shopping_url': item.google_shopping_url,
+                    'seller_link': item.seller_link,
+                    'seller_logo': item.seller_logo,
+                    'seller_name': item.seller_name
+                }
+                all_data.append(tmp)
+
+            return JsonResponse({"Message": "All Cart items fetched Successfully", "cart_data": all_data}, status=status.HTTP_200_OK)
+        except ObjectDoesNotExist:
+            return Response({"Message": "Cart items not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"Message":f"Failed to Fetch Cart items: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
