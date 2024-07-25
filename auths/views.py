@@ -282,7 +282,7 @@ class UserLoginView(APIView):
         else:
             return Response({
                                     "Message": 
-                                        'Sorry, your password was incorrect.'
+                                        'Sorry, your password is incorrect.'
                                     
                                 }
                             , status=status.HTTP_401_UNAUTHORIZED)
@@ -1434,6 +1434,9 @@ class OxylabProductDetailView(APIView):
             try:
                 # data = response.json()
                 prod_data = data['results'][0]['content']
+
+                if prod_data ['parse_status_code'] == 12009:    
+                    return Response({'Message': 'Unable to fetch the Product detail'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 # print(data)
                 logger.debug(f"Received API response: {prod_data}")
 
@@ -2080,6 +2083,9 @@ class OxylabPricingView(APIView):
             try:
                 # data = response.json()
                 prod_data = data['results'][0]['content']
+
+                if prod_data ['parse_status_code'] == 12009:    
+                    return Response({'Message': 'Unable to fetch the Pricing detail'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 # print(data)
                 logger.debug(f"Received API response: {prod_data}")
 
