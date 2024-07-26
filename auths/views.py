@@ -1565,6 +1565,13 @@ class OxylabProductDetailView(APIView):
                         if review_url and review_url.startswith('/'):
                             reviews_data['url'] = url_prefix + review_url
 
+
+            if 'related_items' in data['results'][0]['content']:
+                for seller_info in data['results'][0]['content']['related_items'][0]['items']:
+                    seller_link = seller_info.get('url')
+                    if seller_link and seller_link.startswith('/'):
+                        seller_info['url'] = url_prefix + seller_link
+
             # Convert the updated data back to JSON format if needed
             # updated_json = json.dumps(data, indent=2,ensure_ascii=False)
 
