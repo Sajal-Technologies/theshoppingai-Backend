@@ -17,13 +17,14 @@ from django.conf import settings
 from django.utils import timezone
 # import pytz
 import datetime
-import requests
+import requests, json
 import random
 from django.core.validators import validate_email
 import threading
 from queue import Queue
 from django.contrib.sessions.models import Session
 from django.core import serializers
+import re
 # from django.utils.http import http_date
 # Create your views here.
 
@@ -522,7 +523,7 @@ class ForgotPasswordView(APIView):
 from selenium.webdriver import Chrome
 from selenium.webdriver.chrome.options import Options
 import time
-import requests
+# import requests
 from bs4 import BeautifulSoup
 import urllib.parse
 from urllib.parse import parse_qs, urlparse
@@ -1206,6 +1207,7 @@ class OxylabSearchView(APIView):
                 'pages': 1,
                 'parse': True,
                 'locale': 'en',
+                "geo_location": "India",
                 'context': context,
             }
             try:
@@ -1216,6 +1218,7 @@ class OxylabSearchView(APIView):
                 )
                 response.raise_for_status()
                 data = response.json()
+                print(data)
                 return data.get('results', [])
             except requests.RequestException as e:
                 logger.error(f"Error fetching page {page_number}: {e}")
@@ -1493,7 +1496,7 @@ class OxylabSearchView(APIView):
 
 
 
-import requests, json
+# import requests, json
 from pprint import pprint
 
 class OxylabProductDetailView(APIView):
@@ -1530,6 +1533,7 @@ class OxylabProductDetailView(APIView):
             'query': product_id, # Product ID
             'parse': True,
             'locale': 'en',
+            "geo_location": "India",
         }
 
         try:
@@ -1554,7 +1558,7 @@ class OxylabProductDetailView(APIView):
                 for seller_info in data['results'][0]['content']['pricing']['online']:
                     seller_link = seller_info.get('seller_link')
                     if seller_link and seller_link.startswith('/'):
-                        seller_info['seller_link'] = url_prefix + seller_link
+                        seller_info['seller_link'] = str(seller_link).replace("/url?q=",'')
 
             # Update review URLs for 1, 3, 4, and 5 stars
             if 'reviews' in data['results'][0]['content'] and 'reviews_by_stars' in data['results'][0]['content']['reviews']:
@@ -1565,12 +1569,25 @@ class OxylabProductDetailView(APIView):
                         if review_url and review_url.startswith('/'):
                             reviews_data['url'] = url_prefix + review_url
 
+            def extract_product_id(url):
+                # Define a regular expression pattern to match the product ID
+                pattern = r'/shopping/product/(\d+)'
+                # Use re.search to find the product ID
+                match = re.search(pattern, url)
+                if match:
+                    return match.group(1)  # Return the product ID
+                else:
+                    return None
+
 
             if 'related_items' in data['results'][0]['content']:
                 for seller_info in data['results'][0]['content']['related_items'][0]['items']:
                     seller_link = seller_info.get('url')
                     if seller_link and seller_link.startswith('/'):
-                        seller_info['url'] = url_prefix + seller_link
+                        # seller_info['url'] = url_prefix + seller_link
+                        seller_info['url'] = extract_product_id(seller_link)
+                        seller_info['product_id'] = extract_product_id(seller_link)
+                        del seller_info['url']
 
             # Convert the updated data back to JSON format if needed
             # updated_json = json.dumps(data, indent=2,ensure_ascii=False)
