@@ -63,4 +63,7 @@ urlpatterns = [
     path('api/admin/get-all-cart/', Admingetallcart.as_view(), name='Admingetallcart'),
 
     path('api/admin/get-all-savelateritem/', Admingetallsavelater.as_view(), name='Admingetallsavelater'),
+
+
+    path('api/oxy-sale-product/', OxylabSaleView.as_view(), name='api-OxylabSaleView'), 
 ]
