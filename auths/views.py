@@ -1730,13 +1730,30 @@ class OxylabProductDetailView(APIView):
                     return None
 
 
+            # if 'related_items' in data['results'][0]['content']:
+            #     for seller_info in data['results'][0]['content']['related_items'][0]['items']:
+            #         seller_link = seller_info.get('url')
+            #         if seller_link and seller_link.startswith('/'):
+            #             seller_info['url'] = url_prefix + seller_link
+            #             # seller_info['url'] = extract_product_id(seller_link)
+            #             seller_info['product_id'] = extract_product_id(seller_link)
+            #             if seller_info['product_id'] == '1':
+            #                 del seller_info
             if 'related_items' in data['results'][0]['content']:
-                for seller_info in data['results'][0]['content']['related_items'][0]['items']:
-                    seller_link = seller_info.get('url')
-                    if seller_link and seller_link.startswith('/'):
-                        seller_info['url'] = url_prefix + seller_link
-                        # seller_info['url'] = extract_product_id(seller_link)
-                        seller_info['product_id'] = extract_product_id(seller_link)
+                related_items = data['results'][0]['content']['related_items']
+                if related_items and isinstance(related_items, list):
+                    updated_items = []
+                    for seller_info in related_items[0]['items']:
+                        seller_link = seller_info.get('url')
+                        if seller_link and seller_link.startswith('/'):
+                            seller_info['url'] = url_prefix + seller_link
+                            seller_info['product_id'] = extract_product_id(seller_link)
+                            del seller_info['url']
+                            # Add to the list if product_id is not '1'
+                            if seller_info['product_id'] != '1':
+                                updated_items.append(seller_info)
+                    # Replace old list with updated list
+                    related_items[0]['items'] = updated_items
                         # del seller_info['url']
 
             # Convert the updated data back to JSON format if needed
@@ -2130,19 +2147,35 @@ class Deletefromsaveforlater(APIView):
             return Response({"Message": "User not Found!!!!"})
         
         savelater_id = request.data.get("savelater_id")
-        if not savelater_id or not request.data.get("savelater_id"):
-            return Response({"Message": "savelater id not Found!!!!"})
+        products_id = request.data.get('product_id')
 
-        try:
-            item = saveforlater.objects.get(user=user, id=savelater_id)
-            item.delete()
-            return Response({"Message": "Product removed from Save for later"}, status=status.HTTP_204_NO_CONTENT)
-
-        except ObjectDoesNotExist:
-            return Response({"Message": "Save for later item not found"}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({"Message":f"Failed to remove item from Save for later: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
+        if not savelater_id and not products_id:
+            return Response({"Message": "Please provide savelater id or product id!!!!"})
         
+        if savelater_id:
+
+            try:
+                item = saveforlater.objects.get(user=user, id=savelater_id)
+                item.delete()
+                return Response({"Message": "Product removed from Save for later"}, status=status.HTTP_204_NO_CONTENT)
+
+            except ObjectDoesNotExist:
+                return Response({"Message": "Save for later item not found"}, status=status.HTTP_404_NOT_FOUND)
+            except Exception as e:
+                return Response({"Message":f"Failed to remove item from Save for later: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
+        
+        if products_id:
+
+            try:
+                item = saveforlater.objects.filter(user=user, product_id=products_id).first()
+                item.delete()
+                return Response({"Message": "Product removed from Save for later"}, status=status.HTTP_204_NO_CONTENT)
+
+            except ObjectDoesNotExist:
+                return Response({"Message": "Save for later item not found"}, status=status.HTTP_404_NOT_FOUND)
+            except Exception as e:
+                return Response({"Message":f"Failed to remove item from Save for later: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
+
 
 class MovetoCartfromsaveforlater(APIView):
     def post(self,request):
