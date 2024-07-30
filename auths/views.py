@@ -1734,10 +1734,10 @@ class OxylabProductDetailView(APIView):
                 for seller_info in data['results'][0]['content']['related_items'][0]['items']:
                     seller_link = seller_info.get('url')
                     if seller_link and seller_link.startswith('/'):
-                        # seller_info['url'] = url_prefix + seller_link
-                        seller_info['url'] = extract_product_id(seller_link)
+                        seller_info['url'] = url_prefix + seller_link
+                        # seller_info['url'] = extract_product_id(seller_link)
                         seller_info['product_id'] = extract_product_id(seller_link)
-                        del seller_info['url']
+                        # del seller_info['url']
 
             # Convert the updated data back to JSON format if needed
             # updated_json = json.dumps(data, indent=2,ensure_ascii=False)
@@ -1972,41 +1972,151 @@ class Addtosaveforlater(APIView):
 
         cart_id = request.data.get("cart_id")
 
-        if not cart_id or not request.data.get("cart_id"):
-            return Response({"Message": "Cart id not Found!!!!"})
+        products_id = request.data.get('product_id') 
 
-        try:
-            # get the cart object
-            kart = cart.objects.get(user=user, id=cart_id)
+        if not cart_id and not products_id:
+            return Response({"Message": "Please Provide Product_id or Cart id!!!!"})
+        
+        if cart_id:
 
-            # Create the saveforlater object with fields from cart
-            save_for_later_data = {
-                'user': user,
-                'product_id': kart.product_id,
-                'quantity': kart.quantity,
-                'product_name': kart.product_name,
-                'product_image': kart.product_image,
-                'price': kart.price,
-                'google_shopping_url': kart.google_shopping_url,
-                'seller_link': kart.seller_link,
-                'seller_logo': kart.seller_logo,
-                'seller_name': kart.seller_name
+            try:
+                # get the cart object
+                kart = cart.objects.get(user=user, id=cart_id)
+
+                # Create the saveforlater object with fields from cart
+                save_for_later_data = {
+                    'user': user,
+                    'product_id': kart.product_id,
+                    'quantity': kart.quantity,
+                    'product_name': kart.product_name,
+                    'product_image': kart.product_image,
+                    'price': kart.price,
+                    'google_shopping_url': kart.google_shopping_url,
+                    'seller_link': kart.seller_link,
+                    'seller_logo': kart.seller_logo,
+                    'seller_name': kart.seller_name
+                }
+
+                # Create saveforlater object
+                saveforlater.objects.create(**save_for_later_data)
+
+
+                # Create the saveforlater object
+                # saveforlater.objects.create(kart)
+                # delete the cart object
+                kart.delete()
+                return Response({"Message": "Product has been Saved For Later"}, status=status.HTTP_204_NO_CONTENT)
+            except ObjectDoesNotExist:
+                return Response({"Message": "Cart item not found"}, status=status.HTTP_404_NOT_FOUND)
+            except Exception as e:
+                return Response({"Message":f"Failed to move product to Saved For Later: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
+            
+        else: # Means Product Id is provide and not cart id
+
+            # if not products_id or not request.data.get('product_id'):
+            #     return Response({"Message":"Product not Found!!!"},status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                oxy_account = oxylab_account.objects.get(id=1)
+                username = oxy_account.username
+                password = oxy_account.password
+            except oxylab_account.DoesNotExist:
+                return Response({'Message': 'Error in oxylabs credential '}, status=status.HTTP_400_BAD_REQUEST)
+
+
+            payload = {
+                'source': 'google_shopping_product',
+                'domain': 'co.in',
+                'query': products_id, # Product ID
+                'parse': True,
+                'locale': 'en'
             }
 
-            # Create saveforlater object
-            saveforlater.objects.create(**save_for_later_data)
+            try:
+
+                # Get response.
+                response = requests.request(
+                    'POST',
+                    'https://realtime.oxylabs.io/v1/queries',
+                    auth=(username, password),
+                    json=payload,
+                )
+                
+                data =response.json()#['results'][0]['content']
+
+                # print(data)
+
+                # URL prefix to prepend
+                url_prefix = 'https://www.google.com'
+
+                # Update seller links
+                if 'pricing' in data['results'][0]['content'] and 'online' in data['results'][0]['content']['pricing']:
+                    for seller_info in data['results'][0]['content']['pricing']['online']:
+                        seller_link = seller_info.get('seller_link')
+                        if seller_link and seller_link.startswith('/'):
+                            seller_info['seller_link'] = str(seller_link).replace("/url?q=",'')#url_prefix + seller_link
+
+                # Update review URLs for 1, 3, 4, and 5 stars
+                if 'reviews' in data['results'][0]['content'] and 'reviews_by_stars' in data['results'][0]['content']['reviews']:
+                    for rating in ['1', '3', '4', '5']:
+                        reviews_data = data['results'][0]['content']['reviews']['reviews_by_stars'].get(rating)
+                        if reviews_data:
+                            review_url = reviews_data.get('url')
+                            if review_url and review_url.startswith('/'):
+                                reviews_data['url'] = url_prefix + review_url
+
+                # pprint(data)
+                response_data = data['results'][0]['content']
+                # response_data = data
+            except Exception as e:
+                    return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            print("Product data fetched Succesfully")
+
+            try:
+                quantity = request.data.get("quantity",1)
+                # product_id = products_id
+                google_shopping_url = response_data['url']
+                product_name = response_data['title']
+                product_image = response_data['images']['full_size'][0]
+                price = response_data['pricing']['online'][0]['price']
+                seller_link = response_data['pricing']['online'][0]['seller_link']
+                # seller_logo = data['url']
+                seller_name = response_data['pricing']['online'][0]['seller']
+            except Exception as e:
+                return Response({"Message":f"Error Occured: {str(e)}"})
+            
+            print("Product details fetched Succesfully")
+
+            try:
+
+                saveforlater.objects.create(
+                user= user,
+                quantity = quantity, # IT SHOULD NOT BE ADDED TO CART AS WE DONT HAVE ACCESS TO SELLER WEBSITE WE ONLY AHVE LINK
+                product_id = products_id,
+                google_shopping_url = google_shopping_url,
+                product_name = product_name,
+                product_image = product_image,
+                price = price,
+                seller_link = seller_link,
+                seller_name = seller_name
+                )
+                return Response({"Message": "Product has been Saved For Later"}, status=status.HTTP_204_NO_CONTENT)
+
+            except ObjectDoesNotExist:
+                return Response({"Message": "Cart item not found"}, status=status.HTTP_404_NOT_FOUND)
+            except Exception as e:
+                return Response({"Message":f"Failed to move product to Saved For Later: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
 
 
-            # Create the saveforlater object
-            # saveforlater.objects.create(kart)
-            # delete the cart object
-            kart.delete()
-            return Response({"Message": "Product has been Saved For Later"}, status=status.HTTP_204_NO_CONTENT)
 
-        except ObjectDoesNotExist:
-            return Response({"Message": "Cart item not found"}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({"Message":f"Failed to move product to Saved For Later: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
+
+        #     return Response({"Message": "Product has been Saved For Later"}, status=status.HTTP_204_NO_CONTENT)
+
+        # except ObjectDoesNotExist:
+        #     return Response({"Message": "Cart item not found"}, status=status.HTTP_404_NOT_FOUND)
+        # except Exception as e:
+        #     return Response({"Message":f"Failed to move product to Saved For Later: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
 
 
 
