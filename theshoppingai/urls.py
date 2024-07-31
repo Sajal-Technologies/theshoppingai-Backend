@@ -66,4 +66,6 @@ urlpatterns = [
 
 
     path('api/oxy-sale-product/', OxylabSaleView.as_view(), name='api-OxylabSaleView'), 
+
+    path('api/oxy-page-search-product/', OxylabPageSearchView.as_view(), name='api-OxylabPageSearchView'), 
 ]

@@ -1703,12 +1703,18 @@ class OxylabProductDetailView(APIView):
             # URL prefix to prepend
             url_prefix = 'https://www.google.com'
 
+            def get_final_url(original_url):
+                response = requests.get(original_url, allow_redirects=True)
+                return response.url
+
             # Update seller links
             if 'pricing' in data['results'][0]['content'] and 'online' in data['results'][0]['content']['pricing']:
                 for seller_info in data['results'][0]['content']['pricing']['online']:
                     seller_link = seller_info.get('seller_link')
                     if seller_link and seller_link.startswith('/'):
-                        seller_info['seller_link'] = str(seller_link).replace("/url?q=",'')
+                        link_seller = url_prefix + seller_link
+                        seller_info['seller_link'] = get_final_url(link_seller)
+                        # get_final_url(link_seller)
 
             # Update review URLs for 1, 3, 4, and 5 stars
             if 'reviews' in data['results'][0]['content'] and 'reviews_by_stars' in data['results'][0]['content']['reviews']:
@@ -1825,6 +1831,9 @@ class AddtoCartView(APIView):
             data =response.json()#['results'][0]['content']
 
             # print(data)
+            def get_final_url(original_url):
+                response = requests.get(original_url, allow_redirects=True)
+                return response.url
 
             # URL prefix to prepend
             url_prefix = 'https://www.google.com'
@@ -1834,7 +1843,9 @@ class AddtoCartView(APIView):
                 for seller_info in data['results'][0]['content']['pricing']['online']:
                     seller_link = seller_info.get('seller_link')
                     if seller_link and seller_link.startswith('/'):
-                        seller_info['seller_link'] = str(seller_link).replace("/url?q=",'')#url_prefix + seller_link
+                        link_seller = url_prefix + seller_link
+                        seller_info['seller_link'] = get_final_url(link_seller)
+                        # seller_info['seller_link'] = str(seller_link).replace("/url?q=",'')#url_prefix + seller_link
 
             # Update review URLs for 1, 3, 4, and 5 stars
             if 'reviews' in data['results'][0]['content'] and 'reviews_by_stars' in data['results'][0]['content']['reviews']:
@@ -2063,6 +2074,10 @@ class Addtosaveforlater(APIView):
 
                 # print(data)
 
+                def get_final_url(original_url):
+                    response = requests.get(original_url, allow_redirects=True)
+                    return response.url
+
                 # URL prefix to prepend
                 url_prefix = 'https://www.google.com'
 
@@ -2071,7 +2086,9 @@ class Addtosaveforlater(APIView):
                     for seller_info in data['results'][0]['content']['pricing']['online']:
                         seller_link = seller_info.get('seller_link')
                         if seller_link and seller_link.startswith('/'):
-                            seller_info['seller_link'] = str(seller_link).replace("/url?q=",'')#url_prefix + seller_link
+                            link_seller = url_prefix + seller_link
+                            seller_info['seller_link'] = get_final_url(link_seller)
+                            # seller_info['seller_link'] = str(seller_link).replace("/url?q=",'')#url_prefix + seller_link
 
                 # Update review URLs for 1, 3, 4, and 5 stars
                 if 'reviews' in data['results'][0]['content'] and 'reviews_by_stars' in data['results'][0]['content']['reviews']:
@@ -2553,3 +2570,409 @@ class OxylabPricingView(APIView):
                 logger.error(f'Unable to fetch the Product detail: {str(e)}')
                 return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
+
+# class OxylabPageSearchView(APIView):
+#     def post(self, request):
+#         logger = logging.getLogger(__name__)  # Get logger for this module
+
+#         # Log the incoming request details
+#         logger.info(f"Received POST request: {request.data}")
+
+#         query = request.data.get("product_name")
+#         ppr_min = request.data.get("ppr_min", None)
+#         ppr_max = request.data.get("ppr_max", None)
+#         sort_by = request.data.get("sort_by", 'relevance')  # Default to 'relevance'
+#         page_number = request.data.get("page_number", '1')  # Default to 'relevance'
+
+#         if not query:
+#             return Response({'Message': 'Please provide query to search'}, status=status.HTTP_400_BAD_REQUEST)
+
+#         try:
+#             oxy_account = oxylab_account.objects.get(id=1)
+#             username = oxy_account.username
+#             password = oxy_account.password
+#         except oxylab_account.DoesNotExist:
+#             return Response({'Message': 'Error in oxylabs credential '}, status=status.HTTP_400_BAD_REQUEST)
+
+#         query_main = str(query).replace(" ", "+")
+
+#         sort_mapping = {
+#             'relevance': 'r',
+#             'low_to_high': 'p',
+#             'high_to_low': 'pd',
+#             'rating': 'rv'
+#         }
+
+#         sort_key = sort_mapping.get(sort_by, 'r')  # Default to 'relevance' if sort_by is invalid
+
+#         # Build context dynamically based on provided filters
+#         context = [{'key': 'sort_by', 'value': sort_key}]
+        
+#         if ppr_min is not None:
+#             context.append({'key': 'min_price', 'value': ppr_min})
+        
+#         if ppr_max is not None:
+#             context.append({'key': 'max_price', 'value': ppr_max})
+
+#         def fetch_page(page_number):
+#             payload = {
+#                 'source': 'google_shopping_search',
+#                 'domain': 'co.in',
+#                 'query': query_main,
+#                 "start_page": page_number,
+#                 'pages': 1,
+#                 'parse': True,
+#                 'locale': 'en',
+#                 "geo_location": "India",
+#                 'context': context,
+#             }
+#             try:
+#                 response = requests.post(
+#                     'https://realtime.oxylabs.io/v1/queries',
+#                     auth=(username, password),
+#                     json=payload,
+#                 )
+#                 response.raise_for_status()
+#                 data = response.json()
+#                 print(data)
+#                 return data.get('results', [])
+#             except requests.RequestException as e:
+#                 logger.error(f"Error fetching page {page_number}: {e}")
+#                 return []
+
+#         # Fetch data from 4 pages in parallel
+#         with ThreadPoolExecutor(max_workers=4) as executor:
+#             futures = [executor.submit(fetch_page, page) for page in range(1, 8)]
+#             results = [future.result() for future in futures]
+
+#         shopping_data = []
+#         search_history_entries = []
+
+#         for page_index, result_set in enumerate(results, start=1):
+#             logger.info(f"Processing results for page {page_index}")
+#             for result in result_set:
+#                 organic_results = result.get('content', {}).get('results', {}).get('organic', [])
+#                 for item in organic_results:
+#                     try:
+#                         if 'url' in item:
+#                             item['url'] = "https://www.google.com" + item['url']
+#                     except Exception as e:
+#                         logger.error(f"Error parsing URL for item: {e}")
+
+#                     try:
+#                         if 'merchant' in item and 'url' in item['merchant']:
+#                             item['merchant']['url'] = self.fix_url(item['merchant']['url'])
+#                     except Exception as e:
+#                         logger.error(f"Error parsing URL for item: {e}")
+
+#                     shopping_data.append(item)
+
+#                     product_id = item.get('product_id')
+#                     if product_id is None or product_id == "":
+#                         logger.error(f"Invalid product_id: {product_id}")
+#                         continue
+
+#                     search_history_entries.append(
+#                         search_history(
+#                             query=query,
+#                             product_id=product_id,
+#                             google_url=item['url'],
+#                             seller_name=item['merchant']['name'],
+#                             seller_url=item['merchant']['url'],
+#                             price=item['price'],
+#                             product_title=item['title'],
+#                             rating=item.get('rating'),
+#                             reviews_count=item.get('reviews_count'),
+#                             product_pic=item.get('thumbnail')
+#                         )
+#                     )
+
+#         logger.info(f"Total search_history entries to create: {len(search_history_entries)}")
+
+#         with transaction.atomic():
+#             for entry in search_history_entries:
+#                 try:
+#                     entry.save()
+#                 except Exception as e:
+#                     logger.error(f"Error creating search_history entry: {e}")
+
+#         logger.info(f"Total products fetched: {len(shopping_data)}")
+#         return Response({'Message': 'Fetched the Product data Successfully', "Product_data": shopping_data}, status=status.HTTP_200_OK)
+
+#     @staticmethod
+#     def fix_url(encoded_url):
+#         parsed_url = urlparse(encoded_url)
+#         query_params = parse_qs(parsed_url.query)
+#         if 'url' in query_params:
+#             return query_params['url'][0]
+#         return encoded_url
+
+
+
+# class OxylabPageSearchView(APIView):
+#     def post(self, request):
+#         logger = logging.getLogger(__name__)  # Get logger for this module
+
+#         # Log the incoming request details
+#         logger.info(f"Received POST request: {request.data}")
+
+#         query = request.data.get("product_name")
+#         ppr_min = request.data.get("ppr_min", None)
+#         ppr_max = request.data.get("ppr_max", None)
+#         sort_by = request.data.get("sort_by", 'relevance')  # Default to 'relevance'
+#         page_number = request.data.get("page_number", 1)  # Default to 1 if not provided
+
+#         if not query:
+#             return Response({'Message': 'Please provide query to search'}, status=status.HTTP_400_BAD_REQUEST)
+
+#         try:
+#             oxy_account = oxylab_account.objects.get(id=1)
+#             username = oxy_account.username
+#             password = oxy_account.password
+#         except oxylab_account.DoesNotExist:
+#             return Response({'Message': 'Error in oxylabs credential '}, status=status.HTTP_400_BAD_REQUEST)
+
+#         query_main = str(query).replace(" ", "+")
+
+#         sort_mapping = {
+#             'relevance': 'r',
+#             'low_to_high': 'p',
+#             'high_to_low': 'pd',
+#             'rating': 'rv'
+#         }
+
+#         sort_key = sort_mapping.get(sort_by, 'r')  # Default to 'relevance' if sort_by is invalid
+
+#         # Build context dynamically based on provided filters
+#         context = [{'key': 'sort_by', 'value': sort_key}]
+        
+#         if ppr_min is not None:
+#             context.append({'key': 'min_price', 'value': ppr_min})
+        
+#         if ppr_max is not None:
+#             context.append({'key': 'max_price', 'value': ppr_max})
+
+#         def fetch_page(page_number):
+#             payload = {
+#                 'source': 'google_shopping_search',
+#                 'domain': 'co.in',
+#                 'query': query_main,
+#                 "start_page": page_number,
+#                 'pages': 1,
+#                 'parse': True,
+#                 'locale': 'en',
+#                 "geo_location": "India",
+#                 'context': context,
+#             }
+#             print("The payload is given as below: ",payload)
+#             try:
+#                 response = requests.post(
+#                     'https://realtime.oxylabs.io/v1/queries',
+#                     auth=(username, password),
+#                     json=payload,
+#                 )
+#                 response.raise_for_status()
+#                 data = response.json()
+#                 print(data)
+#                 return data.get('results', [])
+#             except requests.RequestException as e:
+#                 logger.error(f"Error fetching page {page_number}: {e}")
+#                 return []
+
+#         # Fetch data for the specified page
+#         results = fetch_page(page_number)
+
+#         shopping_data = []
+#         search_history_entries = []
+
+#         for result in results:
+#             organic_results = result.get('content', {}).get('results', {}).get('organic', [])
+#             for item in organic_results:
+#                 try:
+#                     if 'url' in item:
+#                         item['url'] = "https://www.google.com" + item['url']
+#                 except Exception as e:
+#                     logger.error(f"Error parsing URL for item: {e}")
+
+#                 try:
+#                     if 'merchant' in item and 'url' in item['merchant']:
+#                         item['merchant']['url'] = self.fix_url(item['merchant']['url'])
+#                 except Exception as e:
+#                     logger.error(f"Error parsing URL for item: {e}")
+
+#                 shopping_data.append(item)
+
+#                 product_id = item.get('product_id')
+#                 if product_id is None or product_id == "":
+#                     logger.error(f"Invalid product_id: {product_id}")
+#                     continue
+
+#                 search_history_entries.append(
+#                     search_history(
+#                         query=query,
+#                         product_id=product_id,
+#                         google_url=item['url'],
+#                         seller_name=item['merchant']['name'],
+#                         seller_url=item['merchant']['url'],
+#                         price=item['price'],
+#                         product_title=item['title'],
+#                         rating=item.get('rating'),
+#                         reviews_count=item.get('reviews_count'),
+#                         product_pic=item.get('thumbnail')
+#                     )
+#                 )
+
+#         logger.info(f"Total search_history entries to create: {len(search_history_entries)}")
+
+#         with transaction.atomic():
+#             for entry in search_history_entries:
+#                 try:
+#                     entry.save()
+#                 except Exception as e:
+#                     logger.error(f"Error creating search_history entry: {e}")
+
+#         logger.info(f"Total products fetched: {len(shopping_data)}")
+#         return Response({'Message': 'Fetched the Product data Successfully', "Product_data": shopping_data}, status=status.HTTP_200_OK)
+
+#     @staticmethod
+#     def fix_url(encoded_url):
+#         parsed_url = urlparse(encoded_url)
+#         query_params = parse_qs(parsed_url.query)
+#         if 'url' in query_params:
+#             return query_params['url'][0]
+#         return encoded_url
+
+
+
+
+
+
+class OxylabPageSearchView(APIView):
+    def post(self, request):
+        logger = logging.getLogger(__name__)  # Get logger for this module
+
+        # Log the incoming request details
+        logger.info(f"Received POST request: {request.data}")
+
+        query = request.data.get("product_name")
+        ppr_min = request.data.get("ppr_min", None)
+        ppr_max = request.data.get("ppr_max", None)
+        sort_by = request.data.get("sort_by", 'relevance')  # Default to 'relevance'
+        page_number = request.data.get("page_number", 1)  # Default to 1 if not provided
+
+        if not query:
+            return Response({'Message': 'Please provide query to search'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            oxy_account = oxylab_account.objects.get(id=1)
+            username = oxy_account.username
+            password = oxy_account.password
+        except oxylab_account.DoesNotExist:
+            return Response({'Message': 'Error in oxylabs credential '}, status=status.HTTP_400_BAD_REQUEST)
+
+        query_main = str(query).replace(" ", "+")
+
+        sort_mapping = {
+            'relevance': 'r',
+            'low_to_high': 'p',
+            'high_to_low': 'pd',
+            'rating': 'rv'
+        }
+
+        sort_key = sort_mapping.get(sort_by, 'r')  # Default to 'relevance' if sort_by is invalid
+
+        # Build context dynamically based on provided filters
+        context = [{'key': 'sort_by', 'value': sort_key}]
+        
+        if ppr_min is not None:
+            context.append({'key': 'min_price', 'value': ppr_min})
+        
+        if ppr_max is not None:
+            context.append({'key': 'max_price', 'value': ppr_max})
+
+        def fetch_page(page_number):
+            payload = {
+                'source': 'google_shopping_search',
+                'domain': 'co.in',
+                'query': query_main,
+                "start_page": page_number,
+                'pages': 1,
+                'parse': True,
+                'locale': 'en',
+                "geo_location": "India",
+                'context': context,
+            }
+            try:
+                response = requests.post(
+                    'https://realtime.oxylabs.io/v1/queries',
+                    auth=(username, password),
+                    json=payload,
+                )
+                response.raise_for_status()
+                data = response.json()
+                return data.get('results', [])
+            except requests.RequestException as e:
+                logger.error(f"Error fetching page {page_number}: {e}")
+                return []
+
+        # Fetch data for the specified page
+        results = fetch_page(page_number)
+
+        shopping_data = []
+        search_history_entries = []
+
+        for result in results:
+            organic_results = result.get('content', {}).get('results', {}).get('organic', [])
+            for item in organic_results:
+                try:
+                    if 'url' in item:
+                        item['url'] = "https://www.google.com" + item['url']
+                except Exception as e:
+                    logger.error(f"Error parsing URL for item: {e}")
+
+                try:
+                    if 'merchant' in item and 'url' in item['merchant']:
+                        item['merchant']['url'] = self.fix_url(item['merchant']['url'])
+                except Exception as e:
+                    logger.error(f"Error parsing URL for item: {e}")
+
+                shopping_data.append(item)
+
+                product_id = item.get('product_id')
+                if product_id is None or product_id == "":
+                    logger.error(f"Invalid product_id: {product_id}")
+                    continue
+
+                search_history_entries.append(
+                    search_history(
+                        query=query,
+                        product_id=product_id,
+                        google_url=item['url'],
+                        seller_name=item['merchant']['name'],
+                        seller_url=item['merchant']['url'],
+                        price=item['price'],
+                        product_title=item['title'],
+                        rating=item.get('rating'),
+                        reviews_count=item.get('reviews_count'),
+                        product_pic=item.get('thumbnail')
+                    )
+                )
+
+        logger.info(f"Total search_history entries to create: {len(search_history_entries)}")
+
+        with transaction.atomic():
+            try:
+                search_history.objects.bulk_create(search_history_entries, ignore_conflicts=True)
+            except Exception as e:
+                logger.error(f"Error creating search_history entries: {e}")
+
+        logger.info(f"Total products fetched: {len(shopping_data)}")
+        return Response({'Message': 'Fetched the Product data Successfully', "Product_data": shopping_data}, status=status.HTTP_200_OK)
+
+    @staticmethod
+    def fix_url(encoded_url):
+        parsed_url = urlparse(encoded_url)
+        query_params = parse_qs(parsed_url.query)
+        if 'url' in query_params:
+            return query_params['url'][0]
+        return encoded_url
