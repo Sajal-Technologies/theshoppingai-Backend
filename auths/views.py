@@ -2890,6 +2890,37 @@ class OxylabPageSearchView(APIView):
         if ppr_max is not None:
             context.append({'key': 'max_price', 'value': ppr_max})
 
+        def get_final_url(original_url):
+            response = requests.get(original_url, allow_redirects=True)
+            return response.url
+
+        def process_filters(data):
+            """
+            Processes the filters from the given data and returns a dictionary with filter names and their values.
+
+            Args:
+                data (dict): The data containing the filters, typically from response.json()['results'][0].
+
+            Returns:
+                dict: A dictionary with filter names as keys and dictionaries of values as values.
+            """
+            dct = {}
+
+            # Iterate through each filter in the data
+            for i in data['content']['results']['filters']:
+                filter_name = i["name"]
+                tct = {}
+                
+                # Iterate through each value in the filter
+                for j in i['values']:
+                    # Clean the URL parameter and update the tct dictionary
+                    tct[j['value']] = j['url'].split("tbs=")[-1].split('&')[0]
+                
+                # Update the dct dictionary with filter_name and its corresponding tct dictionary
+                dct[filter_name] = tct
+
+            return dct
+
         def fetch_page(page_number):
             payload = {
                 'source': 'google_shopping_search',
@@ -2920,9 +2951,16 @@ class OxylabPageSearchView(APIView):
 
         shopping_data = []
         search_history_entries = []
-
+        last_page_number = []
+        current_page_number = []
         for result in results:
+            try:
+                filters = process_filters(result)
+            except:
+                filters = None
             organic_results = result.get('content', {}).get('results', {}).get('organic', [])
+            last_page_number.append(result.get('content', {})['last_visible_page'])
+            current_page_number.append(result.get('content', {})['page'])
             for item in organic_results:
                 try:
                     if 'url' in item:
@@ -2967,7 +3005,7 @@ class OxylabPageSearchView(APIView):
                 logger.error(f"Error creating search_history entries: {e}")
 
         logger.info(f"Total products fetched: {len(shopping_data)}")
-        return Response({'Message': 'Fetched the Product data Successfully', "Product_data": shopping_data}, status=status.HTTP_200_OK)
+        return Response({'Message': 'Fetched the Product data Successfully', "Product_data": shopping_data, "Last Page": last_page_number, "Current Page":current_page_number, "filters":filters}, status=status.HTTP_200_OK)
 
     @staticmethod
     def fix_url(encoded_url):
