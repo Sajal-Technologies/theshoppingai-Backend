@@ -3010,7 +3010,16 @@ class OxylabPageSearchView(APIView):
 
         logger.info(f"Total products fetched: {len(shopping_data)}")
         filters_list = [{key: value} for key, value in filters.items()]
-        return Response({'Message': 'Fetched the Product data Successfully', "Product_data": shopping_data, "Last Page": last_page_number, "Current Page":current_page_number, "filters":filters_list}, status=status.HTTP_200_OK)
+
+        # desired_format = {
+        filterss =[]
+        # }
+
+        for filter in filters_list:
+            for title, values in filter.items():
+                filterss.append({"title": title, "Value": values})
+
+        return Response({'Message': 'Fetched the Product data Successfully', "Product_data": shopping_data, "Last Page": last_page_number, "Current Page":current_page_number, "filters":filterss}, status=status.HTTP_200_OK)
 
     @staticmethod
     def fix_url(encoded_url):
