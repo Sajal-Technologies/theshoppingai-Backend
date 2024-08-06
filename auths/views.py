@@ -2924,7 +2924,7 @@ class OxylabPageSearchView(APIView):
                 dct[filter_name] = tct
 
             return dct
-
+            
         def fetch_page(page_number):
             payload = {
                 'source': 'google_shopping_search',
@@ -3009,7 +3009,8 @@ class OxylabPageSearchView(APIView):
                 logger.error(f"Error creating search_history entries: {e}")
 
         logger.info(f"Total products fetched: {len(shopping_data)}")
-        return Response({'Message': 'Fetched the Product data Successfully', "Product_data": shopping_data, "Last Page": last_page_number, "Current Page":current_page_number, "filters":filters}, status=status.HTTP_200_OK)
+        filters_list = [{key: value} for key, value in filters.items()]
+        return Response({'Message': 'Fetched the Product data Successfully', "Product_data": shopping_data, "Last Page": last_page_number, "Current Page":current_page_number, "filters":filters_list}, status=status.HTTP_200_OK)
 
     @staticmethod
     def fix_url(encoded_url):
