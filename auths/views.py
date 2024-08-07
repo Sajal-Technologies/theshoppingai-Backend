@@ -2897,33 +2897,6 @@ class OxylabPageSearchView(APIView):
         def get_final_url(original_url):
             response = requests.get(original_url, allow_redirects=True)
             return response.url
-
-        def process_filters(data):
-            """
-            Processes the filters from the given data and returns a dictionary with filter names and their values.
-
-            Args:
-                data (dict): The data containing the filters, typically from response.json()['results'][0].
-
-            Returns:
-                dict: A dictionary with filter names as keys and dictionaries of values as values.
-            """
-            dct = {}
-
-            # Iterate through each filter in the data
-            for i in data['content']['results']['filters']:
-                filter_name = i["name"]
-                tct = {}
-                
-                # Iterate through each value in the filter
-                for j in i['values']:
-                    # Clean the URL parameter and update the tct dictionary
-                    tct[j['value']] = j['url'].split("tbs=")[-1].split('&')[0].split(',')[-1]
-                
-                # Update the dct dictionary with filter_name and its corresponding tct dictionary
-                dct[filter_name] = tct
-
-            return dct
             
         def fetch_page(page_number):
             payload = {
@@ -2950,76 +2923,68 @@ class OxylabPageSearchView(APIView):
                 logger.error(f"Error fetching page {page_number}: {e}")
                 return []
 
-        # Fetch data for the specified page
-        results = fetch_page(page_number)
+        try:
 
-        shopping_data = []
-        search_history_entries = []
-        last_page_number = []
-        current_page_number = []
-        for result in results:
-            try:
-                filters = process_filters(result)
-            except:
-                filters = None
-            organic_results = result.get('content', {}).get('results', {}).get('organic', [])
-            last_page_number.append(result.get('content', {})['last_visible_page'])
-            current_page_number.append(result.get('content', {})['page'])
-            for item in organic_results:
-                try:
-                    if 'url' in item:
-                        item['url'] = "https://www.google.com" + item['url']
-                except Exception as e:
-                    logger.error(f"Error parsing URL for item: {e}")
+            # Fetch data for the specified page
+            results = fetch_page(page_number)
 
-                try:
-                    if 'merchant' in item and 'url' in item['merchant']:
-                        item['merchant']['url'] = self.fix_url(item['merchant']['url'])
-                except Exception as e:
-                    logger.error(f"Error parsing URL for item: {e}")
+            shopping_data = []
+            search_history_entries = []
+            last_page_number = []
+            current_page_number = []
+            for result in results:
+                organic_results = result.get('content', {}).get('results', {}).get('organic', [])
+                last_page_number.append(result.get('content', {})['last_visible_page'])
+                current_page_number.append(result.get('content', {})['page'])
+                for item in organic_results:
+                    try:
+                        if 'url' in item:
+                            item['url'] = "https://www.google.com" + item['url']
+                    except Exception as e:
+                        logger.error(f"Error parsing URL for item: {e}")
 
-                shopping_data.append(item)
+                    try:
+                        if 'merchant' in item and 'url' in item['merchant']:
+                            item['merchant']['url'] = self.fix_url(item['merchant']['url'])
+                    except Exception as e:
+                        logger.error(f"Error parsing URL for item: {e}")
 
-                product_id = item.get('product_id')
-                if product_id is None or product_id == "":
-                    logger.error(f"Invalid product_id: {product_id}")
-                    continue
+                    shopping_data.append(item)
 
-                search_history_entries.append(
-                    search_history(
-                        query=query,
-                        product_id=product_id,
-                        google_url=item['url'],
-                        seller_name=item['merchant']['name'],
-                        seller_url=item['merchant']['url'],
-                        price=item['price'],
-                        product_title=item['title'],
-                        rating=item.get('rating'),
-                        reviews_count=item.get('reviews_count'),
-                        product_pic=item.get('thumbnail')
+                    product_id = item.get('product_id')
+                    if product_id is None or product_id == "":
+                        logger.error(f"Invalid product_id: {product_id}")
+                        continue
+
+                    search_history_entries.append(
+                        search_history(
+                            query=query,
+                            product_id=product_id,
+                            google_url=item['url'],
+                            seller_name=item['merchant']['name'],
+                            seller_url=item['merchant']['url'],
+                            price=item['price'],
+                            product_title=item['title'],
+                            rating=item.get('rating'),
+                            reviews_count=item.get('reviews_count'),
+                            product_pic=item.get('thumbnail')
+                        )
                     )
-                )
 
-        logger.info(f"Total search_history entries to create: {len(search_history_entries)}")
+            logger.info(f"Total search_history entries to create: {len(search_history_entries)}")
 
-        with transaction.atomic():
-            try:
-                search_history.objects.bulk_create(search_history_entries, ignore_conflicts=True)
-            except Exception as e:
-                logger.error(f"Error creating search_history entries: {e}")
+            with transaction.atomic():
+                try:
+                    search_history.objects.bulk_create(search_history_entries, ignore_conflicts=True)
+                except Exception as e:
+                    logger.error(f"Error creating search_history entries: {e}")
 
-        logger.info(f"Total products fetched: {len(shopping_data)}")
-        filters_list = [{key: value} for key, value in filters.items()]
+            logger.info(f"Total products fetched: {len(shopping_data)}")
+            
+            return Response({'Message': 'Fetched the Product data Successfully', "Product_data": shopping_data, "Last Page": last_page_number, "Current Page":current_page_number}, status=status.HTTP_200_OK)
 
-        # desired_format = {
-        filterss =[]
-        # }
-
-        for filter in filters_list:
-            for title, values in filter.items():
-                filterss.append({"title": title, "Value": values})
-
-        return Response({'Message': 'Fetched the Product data Successfully', "Product_data": shopping_data, "Last Page": last_page_number, "Current Page":current_page_number, "filters":filterss}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'Message': f'Failed to Fetch the Product data : {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
 
     @staticmethod
     def fix_url(encoded_url):
@@ -3028,3 +2993,121 @@ class OxylabPageSearchView(APIView):
         if 'url' in query_params:
             return query_params['url'][0]
         return encoded_url
+    
+
+
+
+
+class GetFiltersView(APIView):
+    def post(self, request):
+        logger = logging.getLogger(__name__)  # Get logger for this module
+
+        # Log the incoming request details
+        logger.info(f"Received POST request: {request.data}")
+
+        query = request.data.get("product_name")
+
+        if not query:
+            return Response({'Message': 'Please provide query to search'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            oxy_account = oxylab_account.objects.get(id=1)
+            username = oxy_account.username
+            password = oxy_account.password
+        except oxylab_account.DoesNotExist:
+            return Response({'Message': 'Error in oxylabs credential '}, status=status.HTTP_400_BAD_REQUEST)
+
+        query_main = str(query).replace(" ", "+")
+
+
+
+        def process_filters(data):
+            """
+            Processes the filters from the given data and returns a dictionary with filter names and their values.
+
+            Args:
+                data (dict): The data containing the filters, typically from response.json()['results'][0].
+
+            Returns:
+                dict: A dictionary with filter names as keys and dictionaries of values as values.
+            """
+            dct = {}
+
+            # Iterate through each filter in the data
+            for i in data['content']['results']['filters']:
+                filter_name = i["name"]
+                tct = {}
+                
+                # Iterate through each value in the filter
+                for j in i['values']:
+                    # Clean the URL parameter and update the tct dictionary
+                    # tct[j['value']] = j['url'].split("tbs=")[-1].split('&')[0].split(',')[-1]
+
+                    if str(j['url'].split("tbs=")[-1].split('&')[0].split(',')[-1]).startswith('merchagg'):
+                        tct[j['value']] = j['url'].split("tbs=")[-1].split('&')[0].split(',')[-1].split('%')[0]
+                    else:
+                        tct[j['value']] = j['url'].split("tbs=")[-1].split('&')[0].split(',')[-1]
+                        
+                # Update the dct dictionary with filter_name and its corresponding tct dictionary
+                dct[filter_name] = tct
+
+            return dct
+            
+        def fetch_page():
+            payload = {
+                'source': 'google_shopping_search',
+                'domain': 'co.in',
+                'query': query_main,
+                "start_page": 1,
+                'pages': 1,
+                'parse': True,
+                'locale': 'en',
+                "geo_location": "India",
+                # 'context': context,
+            }
+            try:
+                response = requests.post(
+                    'https://realtime.oxylabs.io/v1/queries',
+                    auth=(username, password),
+                    json=payload,
+                )
+                response.raise_for_status()
+                data = response.json()
+                return data.get('results', [])
+            except requests.RequestException as e:
+                logger.error(f"Error fetching page {1}: {e}")
+                return []
+
+        try:
+
+            # Fetch data for the specified page
+            results = fetch_page()
+
+            current_page_number = []
+            for result in results:
+                try:
+                    filters = process_filters(result)
+                except:
+                    filters = None
+                # organic_results = result.get('content', {}).get('results', {}).get('organic', [])
+                current_page_number.append(result.get('content', {})['page'])
+
+
+            filterss =[]
+
+            if filters==None:
+                filters_list=None
+                filterss = None
+                return Response({'Message': 'Failed to Fetch the Filters data', "filters":filterss}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+
+                filters_list = [{key: value} for key, value in filters.items()]
+                print(filters_list)
+
+                for filter in filters_list:
+                    for title, values in filter.items():
+                        filterss.append({"title": title, "Value": values})
+
+            return Response({'Message': 'Fetched the Filters data Successfully', "Current Page":current_page_number, "filters":filterss}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'Message': f'Failed to Fetch the Filters data: {str(e)}', "filters":None}, status=status.HTTP_400_BAD_REQUEST)
