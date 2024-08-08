@@ -3322,7 +3322,7 @@ class GetAllcategorytext(APIView):
 
 class CreateCategoryText(APIView):
     permission_classes = [IsAuthenticated]
-    renderer_classes = [UserRenderer]  # Allows handling file uploads
+    renderer_classes = [UserRenderer]  
 
     def post(self, request):
         # Extract data from request
@@ -3333,7 +3333,7 @@ class CreateCategoryText(APIView):
             return Response({"Message": msg}, status=status.HTTP_401_UNAUTHORIZED)
 
         category_name = request.data.get('category_name')
-        category_image = request.FILES.get('category_image')  # Handling file uploads
+        category_image = request.FILES.get('category_image') 
         Cat_text1 = request.data.get('Cat_text1', '')
         Cat_text2 = request.data.get('Cat_text2', '')
 
@@ -3374,7 +3374,7 @@ class EditCategoryText(APIView):
         
         # Extract data from request
         category_name = request.data.get('category_name')
-        category_image = request.FILES.get('category_image')  # Handling file uploads
+        category_image = request.FILES.get('category_image')
         Cat_text1 = request.data.get('Cat_text1')
         Cat_text2 = request.data.get('Cat_text2')
 
