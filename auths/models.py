@@ -140,6 +140,19 @@ class orderhistory(TimeStampModel):
     seller_name = models.CharField(max_length=250)
     clicked = models.IntegerField(default=0)  # Field to track the number of clicks
     bought = models.BooleanField(default=False)  # Field to track if the product was bought    
+
+
+
+class category_model(TimeStampModel):
+    category_name = models.CharField(max_length=250)
+    category_image = models.ImageField(upload_to='category_images/',blank=True, null=True)
+    Cat_text1 = models.TextField(blank=True, null=True)
+    Cat_text2 = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.category_name
+
+
     
 #-----------------------------------------------------Code BY Adil-------------------------------------------------------------
 

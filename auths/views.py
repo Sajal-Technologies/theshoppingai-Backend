@@ -3289,3 +3289,9 @@ class OxylabCategoryPageView(APIView):
         if 'url' in query_params:
             return query_params['url'][0]
         return encoded_url
+    
+
+
+# class GetAllcategorytext:
+#     def post(self,request):
+
