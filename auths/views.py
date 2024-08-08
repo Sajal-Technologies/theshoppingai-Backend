@@ -3291,7 +3291,131 @@ class OxylabCategoryPageView(APIView):
         return encoded_url
     
 
+class GetAllcategorytext(APIView):
+    def post(self,request):
+        all_cats=[]
+        try:
+            all_cat = category_model.objects.all()
+            for cats in all_cat:
+                tmp ={
+                    "id":cats.id,
+                    "name":cats.category_name,
+                    "image":request.build_absolute_uri(cats.category_image.url),
+                    "text1":cats.Cat_text1,
+                    "text2":cats.Cat_text2 
+                }
+                all_cats.append(tmp)
 
-# class GetAllcategorytext:
-#     def post(self,request):
+            if len(all_cats) ==0:
+                return Response({'Message': 'No Category data found'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            return Response({'Message': 'Fetched the Category data Successfully', "Category_data": all_cats}, status=status.HTTP_200_OK)
 
+        except ObjectDoesNotExist:
+            return Response({'Message': 'No Category model Exist'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'Message': f'Failed to Fetch the Category data : {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+
+
+
+class CreateCategoryText(APIView):
+    permission_classes = [IsAuthenticated]
+    renderer_classes = [UserRenderer]  # Allows handling file uploads
+
+    def post(self, request):
+        # Extract data from request
+        user_id = get_user_id_from_token(request)
+        user, is_superuser = IsSuperUser(user_id)
+        if not user or not is_superuser:
+            msg = 'could not found the super user'
+            return Response({"Message": msg}, status=status.HTTP_401_UNAUTHORIZED)
+
+        category_name = request.data.get('category_name')
+        category_image = request.FILES.get('category_image')  # Handling file uploads
+        Cat_text1 = request.data.get('Cat_text1', '')
+        Cat_text2 = request.data.get('Cat_text2', '')
+
+        if not category_name:
+            return Response({'Message': 'Category name is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create and save the category object
+        category = category_model(
+            category_name=category_name,
+            category_image=category_image,
+            Cat_text1=Cat_text1,
+            Cat_text2=Cat_text2
+        )
+        category.save()
+
+        return Response({'Message': 'Category created successfully', 'id': category.id}, status=status.HTTP_201_CREATED)
+
+
+
+class EditCategoryText(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user_id = get_user_id_from_token(request)
+        user, is_superuser = IsSuperUser(user_id)
+        if not user or not is_superuser:
+            msg = 'could not found the super user'
+            return Response({"Message": msg}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        cat_id = request.data.get('cat_id')
+        if not cat_id:
+            Response({'Message': 'Category not found'}, status=status.HTTP_404_NOT_FOUND) 
+
+        try:
+            category = category_model.objects.get(id=cat_id)
+        except category_model.DoesNotExist:
+            return Response({'Message': 'Category not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Extract data from request
+        category_name = request.data.get('category_name')
+        category_image = request.FILES.get('category_image')  # Handling file uploads
+        Cat_text1 = request.data.get('Cat_text1')
+        Cat_text2 = request.data.get('Cat_text2')
+
+        if category_name:
+            category.category_name = category_name
+        if category_image:
+            category.category_image = category_image
+        if Cat_text1 is not None:
+            category.Cat_text1 = Cat_text1
+        if Cat_text2 is not None:
+            category.Cat_text2 = Cat_text2
+
+        if not (category_name or category_image or Cat_text1 or Cat_text2):
+            return Response({'Message': 'No detail found to update'}, status=status.HTTP_400_BAD_REQUEST)
+
+        category.save()
+
+        return Response({'Message': 'Category updated successfully', 'id': category.id}, status=status.HTTP_200_OK)
+
+
+
+
+class DeleteCategoryText(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user_id = get_user_id_from_token(request)
+        user, is_superuser = IsSuperUser(user_id)
+        if not user or not is_superuser:
+            msg = 'could not found the super user'
+            return Response({"Message": msg}, status=status.HTTP_401_UNAUTHORIZED)
+
+        cat_id = request.data.get('cat_id')
+        if not cat_id:
+            Response({'Message': 'Category not found'}, status=status.HTTP_404_NOT_FOUND) 
+
+        try:
+            category = category_model.objects.get(id=cat_id)
+            category.delete()
+            return Response({'Message': 'Category Text deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+        except category_model.DoesNotExist:
+            return Response({'Message': 'Category Text not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'Message': 'Failed to Delete the Category Text'}, status=status.HTTP_404_NOT_FOUND)

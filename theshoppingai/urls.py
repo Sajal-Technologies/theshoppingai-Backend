@@ -73,6 +73,13 @@ urlpatterns = [
     path('api/get-filter/', GetFiltersView.as_view(), name='api-GetFiltersView'), 
 
     path('api/oxy-category-page-search/', OxylabCategoryPageView.as_view(), name='api-OxylabCategoryPageView'), 
+
+
+    path('api/get-all-category-text/', GetAllcategorytext.as_view(), name='api-GetAllcategorytext'),
+
+    path('api/create-category-text/', CreateCategoryText.as_view(), name='api-CreateCategoryText'),
+    path('api/edit-category-text/', EditCategoryText.as_view(), name='api-EditCategoryText'),
+    path('api/delete-category-text/', DeleteCategoryText.as_view(), name='api-DeleteCategoryText'),
 ]
 
 if settings.DEBUG:
