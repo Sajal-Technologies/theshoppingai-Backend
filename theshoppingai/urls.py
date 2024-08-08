@@ -70,4 +70,6 @@ urlpatterns = [
     path('api/oxy-page-search-product/', OxylabPageSearchView.as_view(), name='api-OxylabPageSearchView'), 
     
     path('api/get-filter/', GetFiltersView.as_view(), name='api-GetFiltersView'), 
+
+    path('api/oxy-category-page-search/', OxylabCategoryPageView.as_view(), name='api-OxylabCategoryPageView'), 
 ]
