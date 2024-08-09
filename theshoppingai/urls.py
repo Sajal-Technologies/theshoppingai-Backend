@@ -66,7 +66,7 @@ urlpatterns = [
     path('api/admin/get-all-savelateritem/', Admingetallsavelater.as_view(), name='Admingetallsavelater'),
 
 
-    path('api/oxy-sale-product/', OxylabSaleView.as_view(), name='api-OxylabSaleView'), 
+    path('api/oxy-sale-product/', OxylabPageONSale.as_view(), name='api-OxylabPageONSale'), 
 
     path('api/oxy-page-search-product/', OxylabPageSearchView.as_view(), name='api-OxylabPageSearchView'), 
     
