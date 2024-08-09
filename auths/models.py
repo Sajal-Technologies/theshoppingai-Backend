@@ -145,7 +145,10 @@ class orderhistory(TimeStampModel):
 
 class category_model(TimeStampModel):
     category_name = models.CharField(max_length=250)
+    title = models.TextField()
     category_image = models.ImageField(upload_to='category_images/',blank=True, null=True)
+    icon = models.FileField(upload_to='category_icons/',blank=True, null=True)
+    offer_text = models.TextField(blank=True, null=True)
     Cat_text1 = models.TextField(blank=True, null=True)
     Cat_text2 = models.TextField(blank=True, null=True)
 
