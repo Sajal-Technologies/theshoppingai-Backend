@@ -3300,9 +3300,12 @@ class GetAllcategorytext(APIView):
                 tmp ={
                     "id":cats.id,
                     "name":cats.category_name,
+                    "title":cats.title,
                     "image":request.build_absolute_uri(cats.category_image.url),
+                    "icon":request.build_absolute_uri(cats.icon.url),
+                    "offer_text":cats.offer_text,
                     "text1":cats.Cat_text1,
-                    "text2":cats.Cat_text2 
+                    "text2":cats.Cat_text2 ,
                 }
                 all_cats.append(tmp)
 
