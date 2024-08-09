@@ -3336,7 +3336,10 @@ class CreateCategoryText(APIView):
             return Response({"Message": msg}, status=status.HTTP_401_UNAUTHORIZED)
 
         category_name = request.data.get('category_name')
+        title = request.data.get('title')
         category_image = request.FILES.get('category_image') 
+        icon = request.FILES.get('icon')
+        offer_text = request.data.get('offer_text', '')
         Cat_text1 = request.data.get('Cat_text1', '')
         Cat_text2 = request.data.get('Cat_text2', '')
 
@@ -3346,7 +3349,10 @@ class CreateCategoryText(APIView):
         # Create and save the category object
         category = category_model(
             category_name=category_name,
+            title = title,
             category_image=category_image,
+            icon = icon,
+            offer_text = offer_text,
             Cat_text1=Cat_text1,
             Cat_text2=Cat_text2
         )
@@ -3377,7 +3383,10 @@ class EditCategoryText(APIView):
         
         # Extract data from request
         category_name = request.data.get('category_name')
+        title = request.data.get('title')
         category_image = request.FILES.get('category_image')
+        icon = request.FILES.get('icon')
+        offer_text = request.data.get('offer_text', '')
         Cat_text1 = request.data.get('Cat_text1')
         Cat_text2 = request.data.get('Cat_text2')
 
@@ -3385,12 +3394,18 @@ class EditCategoryText(APIView):
             category.category_name = category_name
         if category_image:
             category.category_image = category_image
+        if icon:
+            category.icon = icon
+        if title:
+            category.title = title
         if Cat_text1 is not None:
             category.Cat_text1 = Cat_text1
         if Cat_text2 is not None:
             category.Cat_text2 = Cat_text2
+        if offer_text is not None:
+            category.offer_text = offer_text
 
-        if not (category_name or category_image or Cat_text1 or Cat_text2):
+        if not (category_name or category_image or Cat_text1 or Cat_text2 or title or icon or offer_text):
             return Response({'Message': 'No detail found to update'}, status=status.HTTP_400_BAD_REQUEST)
 
         category.save()
