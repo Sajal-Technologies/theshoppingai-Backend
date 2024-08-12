@@ -2997,7 +2997,7 @@ class DeleteCategoryText(APIView):
 
         cat_id = request.data.get('cat_id')
         if not cat_id:
-            Response({'Message': 'Category not found'}, status=status.HTTP_404_NOT_FOUND) 
+            return Response({'Message': 'Category not found'}, status=status.HTTP_404_NOT_FOUND) 
 
         try:
             category = category_model.objects.get(id=cat_id)
@@ -3075,3 +3075,49 @@ def get_details(response_data):
     except:
         google_shopping_link = "not Available"
     return product_id, product_image, product_name, product_price, seller_link, seller_name, google_shopping_link
+
+
+
+class filter_out_200(APIView):
+    def post(self, request):
+
+        data = request.data.get('data')
+        if not data:
+            return Response({'Message': 'Data not found'}, status=status.HTTP_404_NOT_FOUND) 
+        try:
+            passed= []
+            url_list = ["amazon", "flipkart", "snapdeal", "myntra", "ajio", "paytmmall", "tatacliq", "shopclues", "myntra", "pepperfry", "nykaa", "limeroad", "faballey", "zivame", "koovs", "clovia", "biba", "wforwoman", "bewakoof", "urbanladder", "croma", "reliancedigital", "vijaysales", "gadgets360", "poorvikamobile", "samsung", "oneplus", "mi", "dell", "apple", "bigbasket", "blinkit", "amazon", "jiomart", "dunzo", "spencers", "naturesbasket", "zopnow", "shop", "starquik", "urbanladder", "pepperfry", "fabindia", "hometown", "woodenstreet", "thedecorkart", "chumbak", "hometown", "livspace", "thesleepcompany", "firstcry", "healthkart", "netmeds", "1mg", "lenskart", "tanishq", "bluestone", "caratlane", "zivame", "purplle", "amazon", "flipkart", "in", "crossword", "sapnaonline", "booksadda", "bookchor", "amazon", "a1books", "scholastic", "headsupfortails", "petsworld", "dogspot", "petshop18", "pawsindia", "marshallspetzone", "petsglam", "petsy", "petnest", "justdogsstore", "infibeam", "shoppersstop", "shopping", "craftsvilla", "naaptol", "shopping", "saholic", "flipkart", "homeshop18", "futurebazaar", "ritukumar", "shoppersstop", "thelabellife", "andindia", "globaldesi", "sutastore", "nykaafashion", "jaypore", "amantelingerie", "myntra", "happimobiles", "electronicscomp", "jio", "unboxindia", "samsung", "gadgetbridge", "store", "poorvikamobile", "happimobiles", "vlebazaar", "dmart", "amazon", "naturesbasket", "supermart", "naturesbasket", "spencers", "bigbasket", "moreretail", "easyday", "reliancefresh", "houseofpataudi", "urbanladder", "ikea", "zarahome", "indigoliving", "goodearth", "westside", "godrejinterio", "fabfurnish", "pepperfry", "limeroad", "tanishq", "pcjeweller", "kalyanjewellers", "candere", "caratlane", "bluestone", "voylla", "orra", "sencogoldanddiamonds", "bookishsanta", "pustakmandi", "wordery", "starmark", "bargainbooks", "bookdepository", "worldofbooks", "crossword", "bookswagon", "kitabay", "pupkart", "whiskas", "petshop", "petsy", "headsupfortails", "petsworld", "justdogs", "barksandmeows", "petophilia", "waggle", "themancompany", "beardo", "mamaearth", "in", "plumgoodness", "buywow", "ustraa", "myglamm", "bombayshavingcompany", "khadinatural", "zomato", "swiggy", "freshmenu", "box8", "faasos", "dineout", "rebelfoods", "behrouzbiryani", "dominos", "pizzahut", "makemytrip", "goibibo", "yatra", "cleartrip", "oyorooms", "airbnb", "trivago", "booking", "agoda", "expedia", "urbanclap", "housejoy", "jeeves", "onsitego", "urbanladder", "pepperfry", "homecentre", "rentomojo", "furlenco", "nestaway", "tata"]
+            for i in data:
+                merchant_name = i.get('merchant', {}).get('name', '')
+                url  = i.get('merchant', {}).get('url', '')
+                
+                # Check if the merchant name or a portion of it is in the URL list
+                if any(url.lower() in merchant_name.lower() for url in url_list):
+                    # print(f"Merchant name '{merchant_name}' found in URL list.")
+                    passed.append(i)
+                else:
+                    print(url)
+                    print(f"Merchant name '{merchant_name}' not found in URL list.")
+                
+            
+            return Response({"Message":"Filter out result on 200 website Successful","data":passed}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'Message': f'Unable to filter result: {str(e)}'}, status=status.HTTP_404_NOT_FOUND) 
+
+
+
+url_list = ["amazon", "flipkart", "snapdeal", "myntra", "ajio", "paytmmall", "tatacliq", "shopclues", "myntra", "pepperfry", "nykaa", "limeroad", "faballey", "zivame", "koovs", "clovia", "biba", "wforwoman", "bewakoof", "urbanladder", "croma", "reliancedigital", "vijaysales", "gadgets360", "poorvikamobile", "samsung", "oneplus", "mi", "dell", "apple", "bigbasket", "blinkit", "amazon", "jiomart", "dunzo", "spencers", "naturesbasket", "zopnow", "shop", "starquik", "urbanladder", "pepperfry", "fabindia", "hometown", "woodenstreet", "thedecorkart", "chumbak", "hometown", "livspace", "thesleepcompany", "firstcry", "healthkart", "netmeds", "1mg", "lenskart", "tanishq", "bluestone", "caratlane", "zivame", "purplle", "amazon", "flipkart", "in", "crossword", "sapnaonline", "booksadda", "bookchor", "amazon", "a1books", "scholastic", "headsupfortails", "petsworld", "dogspot", "petshop18", "pawsindia", "marshallspetzone", "petsglam", "petsy", "petnest", "justdogsstore", "infibeam", "shoppersstop", "shopping", "craftsvilla", "naaptol", "shopping", "saholic", "flipkart", "homeshop18", "futurebazaar", "ritukumar", "shoppersstop", "thelabellife", "andindia", "globaldesi", "sutastore", "nykaafashion", "jaypore", "amantelingerie", "myntra", "happimobiles", "electronicscomp", "jio", "unboxindia", "samsung", "gadgetbridge", "store", "poorvikamobile", "happimobiles", "vlebazaar", "dmart", "amazon", "naturesbasket", "supermart", "naturesbasket", "spencers", "bigbasket", "moreretail", "easyday", "reliancefresh", "houseofpataudi", "urbanladder", "ikea", "zarahome", "indigoliving", "goodearth", "westside", "godrejinterio", "fabfurnish", "pepperfry", "limeroad", "tanishq", "pcjeweller", "kalyanjewellers", "candere", "caratlane", "bluestone", "voylla", "orra", "sencogoldanddiamonds", "bookishsanta", "pustakmandi", "wordery", "starmark", "bargainbooks", "bookdepository", "worldofbooks", "crossword", "bookswagon", "kitabay", "pupkart", "whiskas", "petshop", "petsy", "headsupfortails", "petsworld", "justdogs", "barksandmeows", "petophilia", "waggle", "themancompany", "beardo", "mamaearth", "in", "plumgoodness", "buywow", "ustraa", "myglamm", "bombayshavingcompany", "khadinatural", "zomato", "swiggy", "freshmenu", "box8", "faasos", "dineout", "rebelfoods", "behrouzbiryani", "dominos", "pizzahut", "makemytrip", "goibibo", "yatra", "cleartrip", "oyorooms", "airbnb", "trivago", "booking", "agoda", "expedia", "urbanclap", "housejoy", "jeeves", "onsitego", "urbanladder", "pepperfry", "homecentre", "rentomojo", "furlenco", "nestaway", "tata"]
+
+def get_200_sites(data,url_list):
+    for i in data['results'][0]['content']['results']['organic']:
+    # for i in data:        -----> if given Page search api Result
+        merchant_name = i.get('merchant', {}).get('name', '')
+        url  = i.get('merchant', {}).get('url', '')
+        
+        # Check if the merchant name or a portion of it is in the URL list
+        if any(url.lower() in merchant_name.lower() for url in url_list):
+            # print(f"Merchant name '{merchant_name}' found in URL list.")
+            pass
+        else:
+            print(url)
+            print(f"Merchant name '{merchant_name}' not found in URL list.")

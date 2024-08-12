@@ -80,6 +80,8 @@ urlpatterns = [
     path('api/create-category-text/', CreateCategoryText.as_view(), name='api-CreateCategoryText'),
     path('api/edit-category-text/', EditCategoryText.as_view(), name='api-EditCategoryText'),
     path('api/delete-category-text/', DeleteCategoryText.as_view(), name='api-DeleteCategoryText'),
+
+    path('api/filter-result/', filter_out_200.as_view(), name='api-filter_out_200'),
 ]
 
 if settings.DEBUG:
