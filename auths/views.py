@@ -2550,8 +2550,28 @@ class OxylabPageSearchView(APIView):
                     logger.error(f"Error creating search_history entries: {e}")
 
             logger.info(f"Total products fetched: {len(shopping_data)}")
+
+            try:
+                passed= []
+                url_list = ["amazon", "flipkart", "snapdeal", "myntra", "ajio", "paytmmall", "tatacliq", "shopclues", "myntra", "pepperfry", "nykaa", "limeroad", "faballey", "zivame", "koovs", "clovia", "biba", "wforwoman", "bewakoof", "urbanladder", "croma", "reliancedigital", "vijaysales", "gadgets360", "poorvikamobile", "samsung", "oneplus", "mi", "dell", "apple", "bigbasket", "blinkit", "amazon", "jiomart", "dunzo", "spencers", "naturesbasket", "zopnow", "shop", "starquik", "urbanladder", "pepperfry", "fabindia", "hometown", "woodenstreet", "thedecorkart", "chumbak", "hometown", "livspace", "thesleepcompany", "firstcry", "healthkart", "netmeds", "1mg", "lenskart", "tanishq", "bluestone", "caratlane", "zivame", "purplle", "amazon", "flipkart", "in", "crossword", "sapnaonline", "booksadda", "bookchor", "amazon", "a1books", "scholastic", "headsupfortails", "petsworld", "dogspot", "petshop18", "pawsindia", "marshallspetzone", "petsglam", "petsy", "petnest", "justdogsstore", "infibeam", "shoppersstop", "shopping", "craftsvilla", "naaptol", "shopping", "saholic", "flipkart", "homeshop18", "futurebazaar", "ritukumar", "shoppersstop", "thelabellife", "andindia", "globaldesi", "sutastore", "nykaafashion", "jaypore", "amantelingerie", "myntra", "happimobiles", "electronicscomp", "jio", "unboxindia", "samsung", "gadgetbridge", "store", "poorvikamobile", "happimobiles", "vlebazaar", "dmart", "amazon", "naturesbasket", "supermart", "naturesbasket", "spencers", "bigbasket", "moreretail", "easyday", "reliancefresh", "houseofpataudi", "urbanladder", "ikea", "zarahome", "indigoliving", "goodearth", "westside", "godrejinterio", "fabfurnish", "pepperfry", "limeroad", "tanishq", "pcjeweller", "kalyanjewellers", "candere", "caratlane", "bluestone", "voylla", "orra", "sencogoldanddiamonds", "bookishsanta", "pustakmandi", "wordery", "starmark", "bargainbooks", "bookdepository", "worldofbooks", "crossword", "bookswagon", "kitabay", "pupkart", "whiskas", "petshop", "petsy", "headsupfortails", "petsworld", "justdogs", "barksandmeows", "petophilia", "waggle", "themancompany", "beardo", "mamaearth", "in", "plumgoodness", "buywow", "ustraa", "myglamm", "bombayshavingcompany", "khadinatural", "zomato", "swiggy", "freshmenu", "box8", "faasos", "dineout", "rebelfoods", "behrouzbiryani", "dominos", "pizzahut", "makemytrip", "goibibo", "yatra", "cleartrip", "oyorooms", "airbnb", "trivago", "booking", "agoda", "expedia", "urbanclap", "housejoy", "jeeves", "onsitego", "urbanladder", "pepperfry", "homecentre", "rentomojo", "furlenco", "nestaway", "tata"]
+                for i in shopping_data:
+                    merchant_name = i.get('merchant', {}).get('name', '')
+                    url  = i.get('merchant', {}).get('url', '')
+                    
+                    # Check if the merchant name or a portion of it is in the URL list
+                    if any(url.lower() in merchant_name.lower() for url in url_list):
+                        # print(f"Merchant name '{merchant_name}' found in URL list.")
+                        passed.append(i)
+                    else:
+                        print(url)
+                        print(f"Merchant name '{merchant_name}' not found in URL list.")
+                    
+                
+                print({"Message":"Filter out result on 200 website Successful","data":passed})
+            except Exception as e:
+                print({'Message': f'Unable to filter result: {str(e)}'})
             
-            return Response({'Message': 'Fetched the Product data Successfully', "Product_data": shopping_data, "Last Page": last_page_number, "Current Page":current_page_number}, status=status.HTTP_200_OK)
+            return Response({'Message': 'Fetched the Product data Successfully', "Product_data": passed, "Last Page": last_page_number, "Current Page":current_page_number}, status=status.HTTP_200_OK)
 
         except Exception as e:
             return Response({'Message': f'Failed to Fetch the Product data : {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
