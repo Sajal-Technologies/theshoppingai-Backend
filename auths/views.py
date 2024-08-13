@@ -1601,7 +1601,7 @@ class Addtosaveforlater(APIView):
             try:
                 seller_link = response_data['results'][0]['content']['pricing']['online'][0]['seller_link']
             except:
-                selelr_link = None
+                seller_link = None
             # seller Name
             try:
                 seller_name = response_data['results'][0]['content']['pricing']['online'][0]['seller']
@@ -3063,7 +3063,7 @@ def get_details(response_data):
     try:
         seller_link = response_data['results'][0]['content']['pricing']['online'][0]['seller_link']
     except:
-        selelr_link = "not Available"
+        seller_link = "not Available"
     # seller Name
     try:
         seller_name = response_data['results'][0]['content']['pricing']['online'][0]['seller']
