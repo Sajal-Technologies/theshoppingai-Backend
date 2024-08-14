@@ -1107,6 +1107,7 @@ class OxylabProductDetailView(APIView):
             'parse': True,
             'locale': 'en',
             "geo_location": "India",
+            "results_language":"English"
         }
 
         try:
@@ -1127,8 +1128,57 @@ class OxylabProductDetailView(APIView):
             url_prefix = 'https://www.google.com'
 
             def get_final_url(original_url):
-                response = requests.get(original_url, allow_redirects=True)
+                response = requests.get(original_url, allow_redirects=True, timeout=3)
                 return response.url
+
+            def filter_merchants(shopping_data):
+                url_list = [
+                    "amazon", "flipkart", "snapdeal", "myntra", "ajio", "paytmmall", "tatacliq", 
+                    "shopclues", "pepperfry", "nykaa", "limeroad", "faballey", "zivame", "koovs", 
+                    "clovia", "biba", "wforwoman", "bewakoof", "urbanladder", "croma", "reliancedigital", 
+                    "vijaysales", "gadgets360", "poorvikamobile", "samsung", "oneplus", "mi", "dell", 
+                    "apple", "bigbasket", "blinkit", "jiomart", "dunzo", "spencers", "naturesbasket", 
+                    "zopnow", "shop", "starquik", "fabindia", "hometown", "woodenstreet", "thedecorkart", 
+                    "chumbak", "livspace", "thesleepcompany", "firstcry", "healthkart", "netmeds", 
+                    "1mg", "lenskart", "tanishq", "bluestone", "caratlane", "purplle", "crossword", 
+                    "sapnaonline", "booksadda", "bookchor", "a1books", "scholastic", "headsupfortails", 
+                    "petsworld", "dogspot", "petshop18", "pawsindia", "marshallspetzone", "petsglam", 
+                    "petsy", "petnest", "justdogsstore", "infibeam", "shoppersstop", "craftsvilla", 
+                    "naaptol", "saholic", "homeshop18", "futurebazaar", "ritukumar", "thelabellife", 
+                    "andindia", "globaldesi", "sutastore", "nykaafashion", "jaypore", "amantelingerie", 
+                    "happimobiles", "electronicscomp", "jio", "unboxindia", "gadgetbridge", "vlebazaar", 
+                    "dmart", "supermart", "reliancefresh", "houseofpataudi", "ikea", "zarahome", 
+                    "indigoliving", "goodearth", "westside", "godrejinterio", "fabfurnish", "pcjeweller", 
+                    "kalyanjewellers", "candere", "voylla", "orra", "sencogoldanddiamonds", "bookishsanta", 
+                    "pustakmandi", "wordery", "starmark", "bargainbooks", "bookdepository", "worldofbooks", 
+                    "bookswagon", "kitabay", "pupkart", "whiskas", "petshop", "barksandmeows", 
+                    "petophilia", "waggle", "themancompany", "beardo", "mamaearth", "plumgoodness", 
+                    "buywow", "ustraa", "myglamm", "bombayshavingcompany", "khadinatural", "zomato", 
+                    "swiggy", "freshmenu", "box8", "faasos", "dineout", "rebelfoods", "behrouzbiryani", 
+                    "dominos", "pizzahut", "makemytrip", "goibibo", "yatra", "cleartrip", "oyorooms", 
+                    "airbnb", "trivago", "booking", "agoda", "expedia", "urbanclap", "housejoy", 
+                    "jeeves", "onsitego", "homecentre", "rentomojo", "furlenco", "nestaway", "tata"
+                ]
+                
+                passed = []
+
+                try:
+                    for i in shopping_data:
+                        merchant_name = i.get('seller', '')
+                        # url = i.get('merchant', {}).get('url', '')
+                        
+                        # Check if the merchant name or a portion of it is in the URL list
+                        if any(url.lower() in merchant_name.lower() for url in url_list):
+                            passed.append(i)
+                        else:
+                            print(f"Merchant name '{merchant_name}' not found in URL list.")
+                    
+                    return passed
+
+                except Exception as e:
+                    return {'Message': f'Unable to filter result: {str(e)}'}
+
+
 
             # Update seller links
             if 'pricing' in data['results'][0]['content'] and 'online' in data['results'][0]['content']['pricing']:
@@ -1136,7 +1186,10 @@ class OxylabProductDetailView(APIView):
                     seller_link = seller_info.get('seller_link')
                     if seller_link and seller_link.startswith('/'):
                         link_seller = url_prefix + seller_link
-                        seller_info['seller_link'] = get_final_url(link_seller)
+                        try:
+                            seller_info['seller_link'] = get_final_url(link_seller)
+                        except:
+                            seller_info['seller_link'] = link_seller
                         # get_final_url(link_seller)
 
             # Update review URLs for 1, 3, 4, and 5 stars
@@ -1159,15 +1212,6 @@ class OxylabProductDetailView(APIView):
                     return None
 
 
-            # if 'related_items' in data['results'][0]['content']:
-            #     for seller_info in data['results'][0]['content']['related_items'][0]['items']:
-            #         seller_link = seller_info.get('url')
-            #         if seller_link and seller_link.startswith('/'):
-            #             seller_info['url'] = url_prefix + seller_link
-            #             # seller_info['url'] = extract_product_id(seller_link)
-            #             seller_info['product_id'] = extract_product_id(seller_link)
-            #             if seller_info['product_id'] == '1':
-            #                 del seller_info
             if 'related_items' in data['results'][0]['content']:
                 related_items = data['results'][0]['content']['related_items']
                 if related_items and isinstance(related_items, list):
