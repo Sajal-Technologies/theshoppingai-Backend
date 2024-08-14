@@ -2909,9 +2909,10 @@ class GetAllcategorytext(APIView):
                 tmp ={
                     "id":cats.id,
                     "name":cats.category_name,
+                    "mapping_name":cats.mapping_name,
                     "title":cats.title,
-                    "image":request.build_absolute_uri(cats.category_image.url),
-                    "icon":request.build_absolute_uri(cats.icon.url),
+                    "image":request.build_absolute_uri(cats.category_image.url) if cats.category_image else None,
+                    "icon":request.build_absolute_uri(cats.icon.url) if cats.icon else None,
                     "offer_text":cats.offer_text,
                     "text1":cats.Cat_text1,
                     "text2":cats.Cat_text2 ,
@@ -2945,6 +2946,7 @@ class CreateCategoryText(APIView):
             return Response({"Message": msg}, status=status.HTTP_401_UNAUTHORIZED)
 
         category_name = request.data.get('category_name')
+        mapping_name = request.data.get('mapping_name')
         title = request.data.get('title')
         category_image = request.FILES.get('category_image') 
         icon = request.FILES.get('icon')
@@ -2958,6 +2960,7 @@ class CreateCategoryText(APIView):
         # Create and save the category object
         category = category_model(
             category_name=category_name,
+            mapping_name = mapping_name,
             title = title,
             category_image=category_image,
             icon = icon,
@@ -2992,6 +2995,7 @@ class EditCategoryText(APIView):
         
         # Extract data from request
         category_name = request.data.get('category_name')
+        mapping_name = request.data.get('mapping_name')
         title = request.data.get('title')
         category_image = request.FILES.get('category_image')
         icon = request.FILES.get('icon')
@@ -3001,6 +3005,8 @@ class EditCategoryText(APIView):
 
         if category_name:
             category.category_name = category_name
+        if mapping_name:
+            category.mapping_name = mapping_name
         if category_image:
             category.category_image = category_image
         if icon:
