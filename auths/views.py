@@ -2725,7 +2725,8 @@ class OxylabCategoryPageView(APIView):
             'Software': 'Mordern Software',
             'Sporting Goods': 'Mordern Sporting Goods',
             'Toys & Games': 'Mordern Toys & Games',
-            'Vehicles & Parts': 'Mordern Vehicles & Parts'
+            'Vehicles & Parts': 'Mordern Vehicles & Parts',
+            "Lights": "Modern Lighting Solutions"
         }
 
 
@@ -2741,14 +2742,32 @@ class OxylabCategoryPageView(APIView):
         filter_all = request.data.get("filter_all", None)
         sort_by = request.data.get("sort_by", 'relevance')  # Default to 'relevance'
         page_number = request.data.get("page_number", 1)  # Default to 1 if not provided
+        cat_id = request.data.get("cat_id")
 
-        if not query:
-            return Response({'Message': 'Please provide query to search'}, status=status.HTTP_400_BAD_REQUEST)
+        if cat_id:
+            try:
+                cat_model = category_model.objects.get(id = cat_id)
+                mapped_query = cat_model.mapping_name
+            except ObjectDoesNotExist:
+                return Response({'Message': 'No Category Found'}, status=status.HTTP_400_BAD_REQUEST)
+            if not mapped_query:
+                return Response({'Message': 'Invalid query. Please use a valid category from category input_list.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Validate and map the query
-        mapped_query = self.cat_mapping.get(query)
-        if not mapped_query:
-            return Response({'Message': 'Invalid query. Please use a valid category from category input_list.'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            try:
+                cat_model = category_model.objects.filter(category_name = query).first()
+                mapped_query = cat_model.mapping_name
+                print("USING CATEGORY MODEL")
+            except:
+                # Validate and map the query
+                mapped_query = self.cat_mapping.get(query)
+                print("USING QUERY LIST")
+            if not mapped_query:
+                return Response({'Message': 'Invalid query. Please use a valid category from category input_list.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+        if not query and not cat_id:
+            return Response({'Message': 'Please provide query or category_id to search'}, status=status.HTTP_400_BAD_REQUEST)
 
         # Get oxylabs credentials
         try:

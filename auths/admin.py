@@ -31,7 +31,7 @@ class orderhistoryAdmin(admin.ModelAdmin):
     list_display = ["id", "user", 'quantity', 'product_name','price', 'seller_name']   
 
 class category_modelAdmin(admin.ModelAdmin):
-    list_display = ['id','category_name','category_image','created','updated']
+    list_display = ['id','category_name', 'mapping_name','category_image','created','updated']
 
 admin.site.register(category_model, category_modelAdmin)
 admin.site.register(orderhistory, orderhistoryAdmin)
