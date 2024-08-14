@@ -1159,38 +1159,37 @@ class OxylabProductDetailView(APIView):
                     "airbnb", "trivago", "booking", "agoda", "expedia", "urbanclap", "housejoy", 
                     "jeeves", "onsitego", "homecentre", "rentomojo", "furlenco", "nestaway", "tata"
                 ]
-                
-                passed = []
-
                 try:
-                    for i in shopping_data:
-                        merchant_name = i.get('seller', '')
-                        # url = i.get('merchant', {}).get('url', '')
-                        
-                        # Check if the merchant name or a portion of it is in the URL list
-                        if any(url.lower() in merchant_name.lower() for url in url_list):
-                            passed.append(i)
-                        else:
-                            print(f"Merchant name '{merchant_name}' not found in URL list.")
-                    
-                    return passed
-
+                    # Check if any merchant name is in the URL list
+                    return any(
+                        any(url.lower() in merchant.get('seller', '').lower() for url in url_list)
+                        for merchant in shopping_data
+                    )
                 except Exception as e:
-                    return {'Message': f'Unable to filter result: {str(e)}'}
+                    print(f'Error: {str(e)}')
+                    return False
+
 
 
 
             # Update seller links
+            seller_lst = []
             if 'pricing' in data['results'][0]['content'] and 'online' in data['results'][0]['content']['pricing']:
-                for seller_info in data['results'][0]['content']['pricing']['online']:
-                    seller_link = seller_info.get('seller_link')
-                    if seller_link and seller_link.startswith('/'):
-                        link_seller = url_prefix + seller_link
-                        try:
-                            seller_info['seller_link'] = get_final_url(link_seller)
-                        except:
-                            seller_info['seller_link'] = link_seller
-                        # get_final_url(link_seller)
+                for seller_info in data['results'][0]['content']['pricing']['online']: # -----> passed on fail  ---> 200 website check ---> Continue
+                    if filter_merchants([seller_info]) == False:
+                        print("Falied Seller Type",seller_info)
+                    else:
+                        print("Passed Seller Type",seller_info)
+                        seller_link = seller_info.get('seller_link')
+                        if seller_link and seller_link.startswith('/'):
+                            link_seller = url_prefix + seller_link
+                            try:
+                                seller_info['seller_link'] = get_final_url(link_seller)
+                            except:
+                                seller_info['seller_link'] = link_seller
+                            seller_lst.append(seller_info)
+            data['results'][0]['content']['pricing']['online'] = seller_lst
+                            # get_final_url(link_seller)
 
             # Update review URLs for 1, 3, 4, and 5 stars
             if 'reviews' in data['results'][0]['content'] and 'reviews_by_stars' in data['results'][0]['content']['reviews']:
