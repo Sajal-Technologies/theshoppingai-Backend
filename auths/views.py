@@ -3241,12 +3241,14 @@ class ClearSearchHistoryView(APIView):
         
 
 class GetALLCategoryList(APIView):
-    def post(self,request):
+    def post(self, request):
         try:
-            cat_all = category_model.objects.all()
-            all_cat_name = []
-            for cats in cat_all:
-                all_cat_name.append(cats.category_name)
-            return Response({'Message': 'Fetch all category names succesfully', "Catory List": all_cat_name}, status=status.HTTP_204_NO_CONTENT)
+            # Fetch only the category names in a more efficient way
+            all_cat_names = category_model.objects.values_list('category_name', flat=True)
+            
+            return Response({
+                'Message': 'Fetch all category names successfully',
+                'Category List': list(all_cat_names)
+            }, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'Message': f"Unable to get Category List: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
