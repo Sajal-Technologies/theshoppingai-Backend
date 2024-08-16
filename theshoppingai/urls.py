@@ -85,6 +85,7 @@ urlpatterns = [
 
     path('api/clear-search-history/', ClearSearchHistoryView.as_view(), name='api-ClearSearchHistoryView'),
 
+    path('api/get-all-catname/', GetALLCategoryList.as_view(), name='api-GetALLCategoryList'),
 ]
 
 if settings.DEBUG:

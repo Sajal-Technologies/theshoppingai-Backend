@@ -3235,6 +3235,18 @@ class ClearSearchHistoryView(APIView):
     def post(self, request):
         try:
             search_history.objects.all().delete()
-            return Response({'message': 'All search history records have been deleted.'}, status=status.HTTP_204_NO_CONTENT)
+            return Response({'Message': 'All search history records have been deleted.'}, status=status.HTTP_204_NO_CONTENT)
         except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'Message': f"Unable to delete Search history: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+class GetALLCategoryList(APIView):
+    def post(self,request):
+        try:
+            cat_all = category_model.objects.all()
+            all_cat_name = []
+            for cats in cat_all:
+                all_cat_name.append(cats.category_name)
+            return Response({'Message': 'Fetch all category names succesfully', "Catory List": all_cat_name}, status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            return Response({'Message': f"Unable to get Category List: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
