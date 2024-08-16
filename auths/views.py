@@ -3234,11 +3234,21 @@ def get_200_sites(data,url_list):
 class ClearSearchHistoryView(APIView):
     def post(self, request):
         try:
-            search_history.objects.all().delete()
+            # Check if there are any records to delete
+            if not search_history.objects.exists():
+                return Response({'Message': 'No search history records found.'}, status=status.HTTP_404_NOT_FOUND)
+            # Using transaction.atomic to ensure atomicity
+            with transaction.atomic():
+                batch_size = 1000  # Adjust batch size as necessary
+                while search_history.objects.exists():
+                    # Fetch a batch of records to delete
+                    records_to_delete = search_history.objects.all()[:batch_size]
+                    # Delete the batch of records
+                    records_to_delete.delete()
+            
             return Response({'Message': 'All search history records have been deleted.'}, status=status.HTTP_204_NO_CONTENT)
         except Exception as e:
             return Response({'Message': f"Unable to delete Search history: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
 
 class GetALLCategoryList(APIView):
     def post(self, request):
