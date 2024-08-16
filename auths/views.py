@@ -1085,10 +1085,118 @@ class OxylabProductDetailView(APIView):
         #     logger.warning("User not found for userid: %s", userid)
         #     return Response({"Message": "User not Found!!!!"})
 
+        def get_url_data(url):
+
+            # Structure payload.
+            payload = {
+                'source': 'universal_ecommerce',
+                "url" : url,
+                'geo_location': 'India',
+                'parse': True
+            }
+            
+            # Get response.
+            response = requests.request(
+                'POST',
+                'https://realtime.oxylabs.io/v1/queries',
+                auth=(username, password),
+                json=payload,
+            )
+            print("Fetched json Succesfully")
+            
+            
+            
+            # Instead of response with job status and results url, this will return the
+            # JSON response with results.
+            # pprint(response.json())
+            return response.json()
+        
+
+        def get_details(response_data):
+            # Product ID
+            try:
+                product_id = "not Available"
+            except:
+                product_id = "not Available"
+            # product_image
+            try:
+                product_image = response_data['results'][0]['content']['image']
+            except:
+                product_image = "not Available"
+            # Product Name
+            try:
+                product_name = response_data['results'][0]['content']['title']
+            except:
+                product_name = "not Available"
+            # Product Price
+            try:
+                product_price = response_data['results'][0]['content']['price']
+            except:
+                product_price = "not Available"
+            # seller Link
+            try:
+                seller_link = response_data['results'][0]['content']['url']
+            except:
+                seller_link = "not Available"
+            # seller Name
+            try:
+                seller_name = response_data['results'][0]['content']['brand']
+            except:
+                seller_name = "not Available"
+            # Google Shooping Link
+            try:
+                google_shopping_link = response_data['results'][0]['content']['url']
+            except:
+                google_shopping_link = "not Available"
+            try:
+                description = response_data['results'][0]['content']['description']
+            except:
+                description = "not Available"
+            try:
+                parse_status_code = response_data['results'][0]['content']['parse_status_code']
+            except:
+                parse_status_code ="not Available"
+
+
+            tmp = {
+                "url": seller_link,
+                "title": product_name,
+                "images": {
+                    "full_size": [
+                        product_image
+                    ],
+                    "thumbnails": []
+                },
+                "pricing": {
+                    "online": [
+                        {
+                            "price": product_price,
+                            "seller": seller_name,
+                            "details": None,
+                            "currency": "₹",
+                            "condition": "New",
+                            "price_total": product_price,
+                            "seller_link": seller_link,
+                            "price_shipping": 0
+                        }
+                    ]
+                },
+                "variants": None,
+                "description": description,
+                "related_items": None,
+                "title": "You might also like",
+                "parse_status_code": parse_status_code
+            }
+
+            
+            return tmp
+
+        url_link = request.data.get("url_link")
+
         product_id = request.data.get("product_id")
 
-        if not product_id:
-            return Response({'Message': 'Please provide product_id to search'}, status=status.HTTP_400_BAD_REQUEST)
+        if not product_id and not url_link:
+            return Response({'Message': 'Please provide product_id or url_link to search'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             oxy_account = oxylab_account.objects.get(id=1)
@@ -1097,158 +1205,168 @@ class OxylabProductDetailView(APIView):
         except oxylab_account.DoesNotExist:
             return Response({'Message': 'Error in oxylabs credential '}, status=status.HTTP_400_BAD_REQUEST)
 
-
-
-        # Structure payload.
-        payload = {
-            'source': 'google_shopping_product',
-            'domain': 'co.in',
-            'query': product_id, # Product ID
-            'parse': True,
-            'locale': 'en',
-            "geo_location": "India",
-            "results_language":"English"
-        }
-
-        try:
-
-            # Get response.
-            response = requests.request(
-                'POST',
-                'https://realtime.oxylabs.io/v1/queries',
-                auth=(username, password),
-                json=payload,
-            )
-            
-            data =response.json()#['results'][0]['content']
-
-            print(data)
-
-            # URL prefix to prepend
-            url_prefix = 'https://www.google.com'
-
-            def get_final_url(original_url):
-                response = requests.get(original_url, allow_redirects=True, timeout=3)
-                return response.url
-
-            def filter_merchants(shopping_data):
-                url_list = [
-                    "amazon", "flipkart", "snapdeal", "myntra", "ajio", "paytmmall", "tatacliq", 
-                    "shopclues", "pepperfry", "nykaa", "limeroad", "faballey", "zivame", "koovs", 
-                    "clovia", "biba", "wforwoman", "bewakoof", "urbanladder", "croma", "reliancedigital", 
-                    "vijaysales", "gadgets360", "poorvikamobile", "samsung", "oneplus", "mi", "dell", 
-                    "apple", "bigbasket", "blinkit", "jiomart", "dunzo", "spencers", "naturesbasket", 
-                    "zopnow", "shop", "starquik", "fabindia", "hometown", "woodenstreet", "thedecorkart", 
-                    "chumbak", "livspace", "thesleepcompany", "firstcry", "healthkart", "netmeds", 
-                    "1mg", "lenskart", "tanishq", "bluestone", "caratlane", "purplle", "crossword", 
-                    "sapnaonline", "booksadda", "bookchor", "a1books", "scholastic", "headsupfortails", 
-                    "petsworld", "dogspot", "petshop18", "pawsindia", "marshallspetzone", "petsglam", 
-                    "petsy", "petnest", "justdogsstore", "infibeam", "shoppersstop", "craftsvilla", 
-                    "naaptol", "saholic", "homeshop18", "futurebazaar", "ritukumar", "thelabellife", 
-                    "andindia", "globaldesi", "sutastore", "nykaafashion", "jaypore", "amantelingerie", 
-                    "happimobiles", "electronicscomp", "jio", "unboxindia", "gadgetbridge", "vlebazaar", 
-                    "dmart", "supermart", "reliancefresh", "houseofpataudi", "ikea", "zarahome", 
-                    "indigoliving", "goodearth", "westside", "godrejinterio", "fabfurnish", "pcjeweller", 
-                    "kalyanjewellers", "candere", "voylla", "orra", "sencogoldanddiamonds", "bookishsanta", 
-                    "pustakmandi", "wordery", "starmark", "bargainbooks", "bookdepository", "worldofbooks", 
-                    "bookswagon", "kitabay", "pupkart", "whiskas", "petshop", "barksandmeows", 
-                    "petophilia", "waggle", "themancompany", "beardo", "mamaearth", "plumgoodness", 
-                    "buywow", "ustraa", "myglamm", "bombayshavingcompany", "khadinatural", "zomato", 
-                    "swiggy", "freshmenu", "box8", "faasos", "dineout", "rebelfoods", "behrouzbiryani", 
-                    "dominos", "pizzahut", "makemytrip", "goibibo", "yatra", "cleartrip", "oyorooms", 
-                    "airbnb", "trivago", "booking", "agoda", "expedia", "urbanclap", "housejoy", 
-                    "jeeves", "onsitego", "homecentre", "rentomojo", "furlenco", "nestaway", "tata"
-                ]
-                try:
-                    # Check if any merchant name is in the URL list
-                    return any(
-                        any(url.lower() in merchant.get('seller', '').lower() for url in url_list)
-                        for merchant in shopping_data
-                    )
-                except Exception as e:
-                    print(f'Error: {str(e)}')
-                    return False
-
-
-
-
-            # Update seller links
-            seller_lst = []
-            if 'pricing' in data['results'][0]['content'] and 'online' in data['results'][0]['content']['pricing']:
-                for seller_info in data['results'][0]['content']['pricing']['online']: # -----> passed on fail  ---> 200 website check ---> Continue
-                    if filter_merchants([seller_info]) == False:
-                        print("Falied Seller Type",seller_info)
-                    else:
-                        print("Passed Seller Type",seller_info)
-                        seller_link = seller_info.get('seller_link')
-                        if seller_link and seller_link.startswith('/'):
-                            link_seller = url_prefix + seller_link
-                            try:
-                                seller_info['seller_link'] = get_final_url(link_seller)
-                            except:
-                                seller_info['seller_link'] = link_seller
-                            seller_lst.append(seller_info)
-            data['results'][0]['content']['pricing']['online'] = seller_lst
-                            # get_final_url(link_seller)
-
-            # Update review URLs for 1, 3, 4, and 5 stars
-            if 'reviews' in data['results'][0]['content'] and 'reviews_by_stars' in data['results'][0]['content']['reviews']:
-                for rating in ['1', '3', '4', '5']:
-                    reviews_data = data['results'][0]['content']['reviews']['reviews_by_stars'].get(rating)
-                    if reviews_data:
-                        review_url = reviews_data.get('url')
-                        if review_url and review_url.startswith('/'):
-                            reviews_data['url'] = url_prefix + review_url
-
-            def extract_product_id(url):
-                # Define a regular expression pattern to match the product ID
-                pattern = r'/shopping/product/(\d+)'
-                # Use re.search to find the product ID
-                match = re.search(pattern, url)
-                if match:
-                    return match.group(1)  # Return the product ID
-                else:
-                    return None
-
-
-            if 'related_items' in data['results'][0]['content']:
-                related_items = data['results'][0]['content']['related_items']
-                if related_items and isinstance(related_items, list):
-                    updated_items = []
-                    for seller_info in related_items[0]['items']:
-                        seller_link = seller_info.get('url')
-                        if seller_link and seller_link.startswith('/'):
-                            seller_info['url'] = url_prefix + seller_link
-                            seller_info['product_id'] = extract_product_id(seller_link)
-                            del seller_info['url']
-                            # Add to the list if product_id is not '1'
-                            if seller_info['product_id'] != '1':
-                                updated_items.append(seller_info)
-                    # Replace old list with updated list
-                    related_items[0]['items'] = updated_items
-                        # del seller_info['url']
-
-            # Convert the updated data back to JSON format if needed
-            # updated_json = json.dumps(data, indent=2,ensure_ascii=False)
-
-            # Print prettified response to stdout.
-            pprint(data)
+        if url_link:
             try:
-                # data = response.json()
-                prod_data = data['results'][0]['content']
-
-                if prod_data ['parse_status_code'] == 12009:    
-                    return Response({'Message': 'Unable to fetch the Product detail'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                # print(data)
-                logger.debug(f"Received API response: {prod_data}")
-
-                return Response({'Message': 'Fetch the Product detail Successfully', "Product_detail": prod_data}, status=status.HTTP_200_OK)
+                res = get_url_data(url_link)
+                res_all = get_details(res)
+                print(res_all)
+                return Response({'Message': 'Fetch the Product detail Successfully', "Product_detail": res_all}, status=status.HTTP_200_OK)
             except Exception as e:
                 logger.error(f'Unable to fetch the Product detail: {str(e)}')
                 return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        except Exception as e:
-                logger.error(f'Unable to fetch the Product detail: {str(e)}')
-                return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        
+        if product_id:
+            # Structure payload.
+            payload = {
+                'source': 'google_shopping_product',
+                'domain': 'co.in',
+                'query': product_id, # Product ID
+                'parse': True,
+                'locale': 'en',
+                "geo_location": "India",
+                "results_language":"English"
+            }
+
+            try:
+
+                # Get response.
+                response = requests.request(
+                    'POST',
+                    'https://realtime.oxylabs.io/v1/queries',
+                    auth=(username, password),
+                    json=payload,
+                )
+                
+                data =response.json()#['results'][0]['content']
+
+                print(data)
+
+                # URL prefix to prepend
+                url_prefix = 'https://www.google.com'
+
+                def get_final_url(original_url):
+                    response = requests.get(original_url, allow_redirects=True, timeout=3)
+                    return response.url
+
+                def filter_merchants(shopping_data):
+                    url_list = [
+                        "amazon", "flipkart", "snapdeal", "myntra", "ajio", "paytmmall", "tatacliq", 
+                        "shopclues", "pepperfry", "nykaa", "limeroad", "faballey", "zivame", "koovs", 
+                        "clovia", "biba", "wforwoman", "bewakoof", "urbanladder", "croma", "reliancedigital", 
+                        "vijaysales", "gadgets360", "poorvikamobile", "samsung", "oneplus", "mi", "dell", 
+                        "apple", "bigbasket", "blinkit", "jiomart", "dunzo", "spencers", "naturesbasket", 
+                        "zopnow", "shop", "starquik", "fabindia", "hometown", "woodenstreet", "thedecorkart", 
+                        "chumbak", "livspace", "thesleepcompany", "firstcry", "healthkart", "netmeds", 
+                        "1mg", "lenskart", "tanishq", "bluestone", "caratlane", "purplle", "crossword", 
+                        "sapnaonline", "booksadda", "bookchor", "a1books", "scholastic", "headsupfortails", 
+                        "petsworld", "dogspot", "petshop18", "pawsindia", "marshallspetzone", "petsglam", 
+                        "petsy", "petnest", "justdogsstore", "infibeam", "shoppersstop", "craftsvilla", 
+                        "naaptol", "saholic", "homeshop18", "futurebazaar", "ritukumar", "thelabellife", 
+                        "andindia", "globaldesi", "sutastore", "nykaafashion", "jaypore", "amantelingerie", 
+                        "happimobiles", "electronicscomp", "jio", "unboxindia", "gadgetbridge", "vlebazaar", 
+                        "dmart", "supermart", "reliancefresh", "houseofpataudi", "ikea", "zarahome", 
+                        "indigoliving", "goodearth", "westside", "godrejinterio", "fabfurnish", "pcjeweller", 
+                        "kalyanjewellers", "candere", "voylla", "orra", "sencogoldanddiamonds", "bookishsanta", 
+                        "pustakmandi", "wordery", "starmark", "bargainbooks", "bookdepository", "worldofbooks", 
+                        "bookswagon", "kitabay", "pupkart", "whiskas", "petshop", "barksandmeows", 
+                        "petophilia", "waggle", "themancompany", "beardo", "mamaearth", "plumgoodness", 
+                        "buywow", "ustraa", "myglamm", "bombayshavingcompany", "khadinatural", "zomato", 
+                        "swiggy", "freshmenu", "box8", "faasos", "dineout", "rebelfoods", "behrouzbiryani", 
+                        "dominos", "pizzahut", "makemytrip", "goibibo", "yatra", "cleartrip", "oyorooms", 
+                        "airbnb", "trivago", "booking", "agoda", "expedia", "urbanclap", "housejoy", 
+                        "jeeves", "onsitego", "homecentre", "rentomojo", "furlenco", "nestaway", "tata"
+                    ]
+                    try:
+                        # Check if any merchant name is in the URL list
+                        return any(
+                            any(url.lower() in merchant.get('seller', '').lower() for url in url_list)
+                            for merchant in shopping_data
+                        )
+                    except Exception as e:
+                        print(f'Error: {str(e)}')
+                        return False
+
+
+
+
+                # Update seller links
+                seller_lst = []
+                if 'pricing' in data['results'][0]['content'] and 'online' in data['results'][0]['content']['pricing']:
+                    for seller_info in data['results'][0]['content']['pricing']['online']: # -----> passed on fail  ---> 200 website check ---> Continue
+                        if filter_merchants([seller_info]) == False:
+                            print("Falied Seller Type",seller_info)
+                        else:
+                            print("Passed Seller Type",seller_info)
+                            seller_link = seller_info.get('seller_link')
+                            if seller_link and seller_link.startswith('/'):
+                                link_seller = url_prefix + seller_link
+                                try:
+                                    seller_info['seller_link'] = get_final_url(link_seller)
+                                except:
+                                    seller_info['seller_link'] = link_seller
+                                seller_lst.append(seller_info)
+                data['results'][0]['content']['pricing']['online'] = seller_lst
+                                # get_final_url(link_seller)
+
+                # Update review URLs for 1, 3, 4, and 5 stars
+                if 'reviews' in data['results'][0]['content'] and 'reviews_by_stars' in data['results'][0]['content']['reviews']:
+                    for rating in ['1', '3', '4', '5']:
+                        reviews_data = data['results'][0]['content']['reviews']['reviews_by_stars'].get(rating)
+                        if reviews_data:
+                            review_url = reviews_data.get('url')
+                            if review_url and review_url.startswith('/'):
+                                reviews_data['url'] = url_prefix + review_url
+
+                def extract_product_id(url):
+                    # Define a regular expression pattern to match the product ID
+                    pattern = r'/shopping/product/(\d+)'
+                    # Use re.search to find the product ID
+                    match = re.search(pattern, url)
+                    if match:
+                        return match.group(1)  # Return the product ID
+                    else:
+                        return None
+
+
+                if 'related_items' in data['results'][0]['content']:
+                    related_items = data['results'][0]['content']['related_items']
+                    if related_items and isinstance(related_items, list):
+                        updated_items = []
+                        for seller_info in related_items[0]['items']:
+                            seller_link = seller_info.get('url')
+                            if seller_link and seller_link.startswith('/'):
+                                seller_info['url'] = url_prefix + seller_link
+                                seller_info['product_id'] = extract_product_id(seller_link)
+                                del seller_info['url']
+                                # Add to the list if product_id is not '1'
+                                if seller_info['product_id'] != '1':
+                                    updated_items.append(seller_info)
+                        # Replace old list with updated list
+                        related_items[0]['items'] = updated_items
+                            # del seller_info['url']
+
+                # Convert the updated data back to JSON format if needed
+                # updated_json = json.dumps(data, indent=2,ensure_ascii=False)
+
+                # Print prettified response to stdout.
+                pprint(data)
+                try:
+                    # data = response.json()
+                    prod_data = data['results'][0]['content']
+
+                    if prod_data ['parse_status_code'] == 12009:    
+                        return Response({'Message': 'Unable to fetch the Product detail'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    # print(data)
+                    logger.debug(f"Received API response: {prod_data}")
+
+                    return Response({'Message': 'Fetch the Product detail Successfully', "Product_detail": prod_data}, status=status.HTTP_200_OK)
+                except Exception as e:
+                    logger.error(f'Unable to fetch the Product detail: {str(e)}')
+                    return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            except Exception as e:
+                    logger.error(f'Unable to fetch the Product detail: {str(e)}')
+                    return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 
 
@@ -1320,7 +1438,7 @@ class AddtoCartView(APIView):
             try:
                 seller_link = response_data['results'][0]['content']['pricing']['online'][0]['seller_link']
             except:
-                selelr_link = None
+                seller_link = None
             # seller Name
             try:
                 seller_name = response_data['results'][0]['content']['pricing']['online'][0]['seller']
