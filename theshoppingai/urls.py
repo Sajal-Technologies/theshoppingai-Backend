@@ -82,6 +82,9 @@ urlpatterns = [
     path('api/delete-category-text/', DeleteCategoryText.as_view(), name='api-DeleteCategoryText'),
 
     path('api/filter-result/', filter_out_200.as_view(), name='api-filter_out_200'),
+
+    path('api/clear-search-history/', ClearSearchHistoryView.as_view(), name='api-ClearSearchHistoryView'),
+
 ]
 
 if settings.DEBUG:

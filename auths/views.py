@@ -3229,3 +3229,12 @@ def get_200_sites(data,url_list):
         else:
             print(url)
             print(f"Merchant name '{merchant_name}' not found in URL list.")
+
+
+class ClearSearchHistoryView(APIView):
+    def post(self, request):
+        try:
+            search_history.objects.all().delete()
+            return Response({'message': 'All search history records have been deleted.'}, status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
