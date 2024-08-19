@@ -852,7 +852,7 @@ class OxylabSearchView(APIView):
                 )
                 response.raise_for_status()
                 data = response.json()
-                print(data)
+                # print(data)
                 return data.get('results', [])
             except requests.RequestException as e:
                 logger.error(f"Error fetching page {page_number}: {e}")
@@ -865,6 +865,14 @@ class OxylabSearchView(APIView):
 
         shopping_data = []
         search_history_entries = []
+        def generate_unique_product_id():
+            # Generate a UUID and take the integer representation
+            unique_id = uuid.uuid4().int
+            
+            # Convert the integer to a string and take the first 20 digits
+            product_id = "NA_" + str(unique_id)[:30]
+            
+            return product_id
 
         for page_index, result_set in enumerate(results, start=1):
             logger.info(f"Processing results for page {page_index}")
@@ -876,12 +884,19 @@ class OxylabSearchView(APIView):
                             item['url'] = "https://www.google.com" + item['url']
                     except Exception as e:
                         logger.error(f"Error parsing URL for item: {e}")
-
                     try:
                         if 'merchant' in item and 'url' in item['merchant']:
                             item['merchant']['url'] = self.fix_url(item['merchant']['url'])
                     except Exception as e:
                         logger.error(f"Error parsing URL for item: {e}")
+                    try:
+                        print("THE ITEM IS HERE",item)
+                        if 'product_id' not in item or not item['product_id']:
+                            print("THE ITEM WITHOUT PRODUCTID IS HERE",item)
+                            item['product_id'] = generate_unique_product_id()
+                            print("AFTER COrrection THE ITEM WITHOUT PRODUCTID IS HERE",item)
+                    except Exception as e:
+                        logger.error(f"Error getting product_id for item: {e}")
 
                     shopping_data.append(item)
 
@@ -1115,18 +1130,18 @@ class OxylabProductDetailView(APIView):
 
         def get_details(response_data):
 
-            def generate_unique_product_id():
-                # Generate a UUID and take the integer representation
-                unique_id = uuid.uuid4().int
+            # def generate_unique_product_id():
+            #     # Generate a UUID and take the integer representation
+            #     unique_id = uuid.uuid4().int
                 
-                # Convert the integer to a string and take the first 20 digits
-                product_id = str(unique_id)[:30]
+            #     # Convert the integer to a string and take the first 20 digits
+            #     product_id = str(unique_id)[:30]
                 
-                return product_id
+            #     return product_id
 
             # Product ID
             try:
-                product_id = generate_unique_product_id()
+                product_id = "not Available"
             except:
                 product_id = "not Available"
             # product_image
@@ -1170,7 +1185,7 @@ class OxylabProductDetailView(APIView):
 
 
             tmp = {
-                "url": f"/product/{product_id}?hl=en",
+                "url": seller_link,
                 "title": product_name,
                 "images": {
                     "full_size": [
@@ -2669,6 +2684,14 @@ class OxylabPageSearchView(APIView):
 
             # Fetch data for the specified page
             results = fetch_page(page_number)
+            def generate_unique_product_id():
+                # Generate a UUID and take the integer representation
+                unique_id = uuid.uuid4().int
+                
+                # Convert the integer to a string and take the first 20 digits
+                product_id = "NA_" + str(unique_id)[:30]
+                
+                return product_id
 
             shopping_data = []
             search_history_entries = []
@@ -2690,6 +2713,15 @@ class OxylabPageSearchView(APIView):
                             item['merchant']['url'] = self.fix_url(item['merchant']['url'])
                     except Exception as e:
                         logger.error(f"Error parsing URL for item: {e}")
+
+                    try:
+                        print("THE ITEM IS HERE",item)
+                        if 'product_id' not in item or not item['product_id']:
+                            print("THE ITEM WITHOUT PRODUCTID IS HERE",item)
+                            item['product_id'] = generate_unique_product_id()
+                            print("AFTER COrrection THE ITEM WITHOUT PRODUCTID IS HERE",item)
+                    except Exception as e:
+                        logger.error(f"Error getting product_id for item: {e}")
 
                     shopping_data.append(item)
 
