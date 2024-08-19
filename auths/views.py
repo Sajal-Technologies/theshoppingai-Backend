@@ -25,6 +25,7 @@ from queue import Queue
 from django.contrib.sessions.models import Session
 from django.core import serializers
 import re
+import uuid
 # from django.utils.http import http_date
 # Create your views here.
 
@@ -1113,9 +1114,19 @@ class OxylabProductDetailView(APIView):
         
 
         def get_details(response_data):
+
+            def generate_unique_product_id():
+                # Generate a UUID and take the integer representation
+                unique_id = uuid.uuid4().int
+                
+                # Convert the integer to a string and take the first 20 digits
+                product_id = str(unique_id)[:20]
+                
+                return product_id
+
             # Product ID
             try:
-                product_id = "not Available"
+                product_id = generate_unique_product_id()
             except:
                 product_id = "not Available"
             # product_image
