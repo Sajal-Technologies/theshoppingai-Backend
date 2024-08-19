@@ -1120,7 +1120,7 @@ class OxylabProductDetailView(APIView):
                 unique_id = uuid.uuid4().int
                 
                 # Convert the integer to a string and take the first 20 digits
-                product_id = str(unique_id)[:20]
+                product_id = str(unique_id)[:30]
                 
                 return product_id
 
@@ -1170,7 +1170,7 @@ class OxylabProductDetailView(APIView):
 
 
             tmp = {
-                "url": seller_link,
+                "url": f"/product/{product_id}?hl=en",
                 "title": product_name,
                 "images": {
                     "full_size": [
