@@ -1410,6 +1410,15 @@ class AddtoCartView(APIView):
 
         url_link = request.data.get('seller_link')
 
+        def generate_unique_product_id():
+            # Generate a UUID and take the integer representation
+            unique_id = uuid.uuid4().int
+            
+            # Convert the integer to a string and take the first 20 digits
+            product_id = "NA_" + str(unique_id)[:30]
+            
+            return product_id
+
 #==================================================== Add to cart Via Seller Link ==============================================
         def url_to_cart(url):
             # Structure payload.
@@ -1444,7 +1453,7 @@ class AddtoCartView(APIView):
             try:
                 product_id = [i['product_id'] for i in response_data['results'][0]['content']['variants'][0]['items'] if 'selected' in i and i['selected']==True][0]
             except:
-                product_id = "not Available"
+                product_id = generate_unique_product_id()
             # product_image
             try:
                 product_image = response_data['results'][0]['content']['images']['full_size'][0]
@@ -1734,6 +1743,15 @@ class Addtosaveforlater(APIView):
 
         url_link = request.data.get('seller_link')
 
+        def generate_unique_product_id():
+            # Generate a UUID and take the integer representation
+            unique_id = uuid.uuid4().int
+            
+            # Convert the integer to a string and take the first 20 digits
+            product_id = "NA_" + str(unique_id)[:30]
+            
+            return product_id
+
 #==================================================== Add to cart Via Seller Link ==============================================
         def url_to_cart(url):
             # Structure payload.
@@ -1768,7 +1786,7 @@ class Addtosaveforlater(APIView):
             try:
                 product_id = [i['product_id'] for i in response_data['results'][0]['content']['variants'][0]['items'] if 'selected' in i and i['selected']==True][0]
             except:
-                product_id = "not Available"
+                product_id = generate_unique_product_id()
             # product_image
             try:
                 product_image = response_data['results'][0]['content']['images']['full_size'][0]
