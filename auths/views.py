@@ -1116,7 +1116,7 @@ class OxylabProductDetailView(APIView):
                 'POST',
                 'https://realtime.oxylabs.io/v1/queries',
                 auth=(username, password),
-                json=payload,
+                json=payload,timeout=120
             )
             print("Fetched json Succesfully")
             
@@ -1433,7 +1433,7 @@ class AddtoCartView(APIView):
                 'POST',
                 'https://realtime.oxylabs.io/v1/queries',
                 auth=(username, password),
-                json=payload,
+                json=payload,timeout=120
             )
             print("Fetched json Succesfully")
             
@@ -1504,7 +1504,10 @@ class AddtoCartView(APIView):
         
     
         if url_link:
-            data_res = get_url_data(url_link) # NEW CODE UNIVERSAL SCRAPER
+            try:
+                data_res = get_url_data(url_link) # NEW CODE UNIVERSAL SCRAPER
+            except:
+                return Response({"Message":"Unable to fetch details of product"},status=status.HTTP_404_NOT_FOUND)
             try:
                 if data_res['message'] == "Your provided google shopping url is not supported":
                     return Response({"Message":"The given seller link is not valid"})
@@ -1774,7 +1777,7 @@ class Addtosaveforlater(APIView):
                 'POST',
                 'https://realtime.oxylabs.io/v1/queries',
                 auth=(username, password),
-                json=payload,
+                json=payload,timeout=120
             )
             print("Fetched json Succesfully")
             
@@ -1845,7 +1848,10 @@ class Addtosaveforlater(APIView):
         
     
         if url_link:
-            data_res = get_url_data(url_link) # NEW CODE UNIVERSAL SCRAPER
+            try:
+                data_res = get_url_data(url_link) # NEW CODE UNIVERSAL SCRAPER
+            except:
+                return Response({"Message":"Unable to fetch details of product"},status=status.HTTP_404_NOT_FOUND)
             try:
                 if data_res['message'] == "Your provided google shopping url is not supported":
                     return Response({"Message":"The given seller link is not valid"})
