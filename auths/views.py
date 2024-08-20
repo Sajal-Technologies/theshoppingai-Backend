@@ -1475,7 +1475,7 @@ class AddtoCartView(APIView):
             try:
                 product_price = response_data['results'][0]['content']['price']
             except:
-                product_price = "not Available"
+                product_price = 0.0
             # seller Link
             try:
                 seller_link = response_data['results'][0]['content']['url']
@@ -1819,7 +1819,7 @@ class Addtosaveforlater(APIView):
             try:
                 product_price = response_data['results'][0]['content']['price']
             except:
-                product_price = "not Available"
+                product_price = 0.0
             # seller Link
             try:
                 seller_link = response_data['results'][0]['content']['url']
