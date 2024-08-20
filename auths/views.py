@@ -1410,33 +1410,23 @@ class AddtoCartView(APIView):
 
         url_link = request.data.get('seller_link')
 
-        def generate_unique_product_id():
-            # Generate a UUID and take the integer representation
-            unique_id = uuid.uuid4().int
-            
-            # Convert the integer to a string and take the first 20 digits
-            product_id = "NA_" + str(unique_id)[:30]
-            
-            return product_id
-
 #==================================================== Add to cart Via Seller Link ==============================================
-        def url_to_cart(url):
-            # Structure payload.
-            payload = {
-                'source': 'google_shopping',
-                'url': f'{str(url)}',
-                'geo_location': 'India',
-                'parse': True,
-                # 'locale':'en'
-            }
 
-            # Get oxylabs credentials
+        def get_url_data(url):
             try:
                 oxy_account = oxylab_account.objects.get(id=1)
                 username = oxy_account.username
                 password = oxy_account.password
             except oxylab_account.DoesNotExist:
                 return Response({'Message': 'Error in oxylabs credential '}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Structure payload.
+            payload = {
+                'source': 'universal_ecommerce',
+                "url" : url,
+                'geo_location': 'India',
+                'parse': True
+            }
             
             # Get response.
             response = requests.request(
@@ -1445,64 +1435,83 @@ class AddtoCartView(APIView):
                 auth=(username, password),
                 json=payload,
             )
+            print("Fetched json Succesfully")
             
+            
+            
+            # Instead of response with job status and results url, this will return the
+            # JSON response with results.
+            # pprint(response.json())
             return response.json()
+        
 
         def get_details(response_data):
+            def generate_unique_product_id():
+                # Generate a UUID and take the integer representation
+                unique_id = uuid.uuid4().int
+                
+                # Convert the integer to a string and take the first 20 digits
+                product_id = "NA_" + str(unique_id)[:30]
+                
+                return product_id
+            
+
             # Product ID
             try:
-                product_id = [i['product_id'] for i in response_data['results'][0]['content']['variants'][0]['items'] if 'selected' in i and i['selected']==True][0]
-            except:
                 product_id = generate_unique_product_id()
+            except:
+                product_id = "not Available"
             # product_image
             try:
-                product_image = response_data['results'][0]['content']['images']['full_size'][0]
+                product_image = response_data['results'][0]['content']['image']
             except:
-                product_image = None
+                product_image = "not Available"
             # Product Name
             try:
                 product_name = response_data['results'][0]['content']['title']
             except:
-                product_name = None
+                product_name = "not Available"
             # Product Price
             try:
-                product_price = float(response_data['results'][0]['content']['pricing']['online'][0]['price'])
+                product_price = response_data['results'][0]['content']['price']
             except:
-                pass
+                product_price = "not Available"
             # seller Link
             try:
-                seller_link = response_data['results'][0]['content']['pricing']['online'][0]['seller_link']
+                seller_link = response_data['results'][0]['content']['url']
             except:
-                seller_link = None
+                seller_link = "not Available"
             # seller Name
             try:
-                seller_name = response_data['results'][0]['content']['pricing']['online'][0]['seller']
+                seller_name = response_data['results'][0]['content']['brand']
             except:
-                seller_name = None
+                seller_name = "not Available"
             # Google Shooping Link
             try:
                 google_shopping_link = response_data['results'][0]['content']['url']
             except:
-                google_shopping_link = None
+                google_shopping_link = "not Available"
+            try:
+                description = response_data['results'][0]['content']['description']
+            except:
+                description = "not Available"
+            try:
+                parse_status_code = response_data['results'][0]['content']['parse_status_code']
+            except:
+                parse_status_code ="not Available"
+            
             return product_id, product_image, product_name, product_price, seller_link, seller_name, google_shopping_link
         
     
         if url_link:
-            try:
-                oxy_account = oxylab_account.objects.get(id=1)
-                username = oxy_account.username
-                password = oxy_account.password
-            except oxylab_account.DoesNotExist:
-                return Response({'Message': 'Error in oxylabs credential '}, status=status.HTTP_400_BAD_REQUEST)
-        
-            data_res= url_to_cart(url_link)
+            data_res = get_url_data(url_link) # NEW CODE UNIVERSAL SCRAPER
             try:
                 if data_res['message'] == "Your provided google shopping url is not supported":
                     return Response({"Message":"The given seller link is not valid"})
             except:
                 pass
             
-            product_id, product_image, product_name, product_price, seller_link, seller_name, google_shopping_link =get_details(data_res)
+            product_id, product_image, product_name, product_price, seller_link, seller_name, google_shopping_link = get_details(data_res) # NEW CODE UNIVERSAL SCRAPER
 
             print(type(user),user)
             # print(type(quantity),quantity)
@@ -1743,33 +1752,22 @@ class Addtosaveforlater(APIView):
 
         url_link = request.data.get('seller_link')
 
-        def generate_unique_product_id():
-            # Generate a UUID and take the integer representation
-            unique_id = uuid.uuid4().int
-            
-            # Convert the integer to a string and take the first 20 digits
-            product_id = "NA_" + str(unique_id)[:30]
-            
-            return product_id
-
 #==================================================== Add to cart Via Seller Link ==============================================
-        def url_to_cart(url):
-            # Structure payload.
-            payload = {
-                'source': 'google_shopping',
-                'url': f'{str(url)}',
-                'geo_location': 'India',
-                'parse': True,
-                # 'locale':'en'
-            }
-
-            # Get oxylabs credentials
+        def get_url_data(url):
             try:
                 oxy_account = oxylab_account.objects.get(id=1)
                 username = oxy_account.username
                 password = oxy_account.password
             except oxylab_account.DoesNotExist:
                 return Response({'Message': 'Error in oxylabs credential '}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Structure payload.
+            payload = {
+                'source': 'universal_ecommerce',
+                "url" : url,
+                'geo_location': 'India',
+                'parse': True
+            }
             
             # Get response.
             response = requests.request(
@@ -1778,64 +1776,83 @@ class Addtosaveforlater(APIView):
                 auth=(username, password),
                 json=payload,
             )
+            print("Fetched json Succesfully")
             
+            
+            
+            # Instead of response with job status and results url, this will return the
+            # JSON response with results.
+            # pprint(response.json())
             return response.json()
+        
 
         def get_details(response_data):
+            def generate_unique_product_id():
+                # Generate a UUID and take the integer representation
+                unique_id = uuid.uuid4().int
+                
+                # Convert the integer to a string and take the first 20 digits
+                product_id = "NA_" + str(unique_id)[:30]
+                
+                return product_id
+            
+
             # Product ID
             try:
-                product_id = [i['product_id'] for i in response_data['results'][0]['content']['variants'][0]['items'] if 'selected' in i and i['selected']==True][0]
-            except:
                 product_id = generate_unique_product_id()
+            except:
+                product_id = "not Available"
             # product_image
             try:
-                product_image = response_data['results'][0]['content']['images']['full_size'][0]
+                product_image = response_data['results'][0]['content']['image']
             except:
-                product_image = None
+                product_image = "not Available"
             # Product Name
             try:
                 product_name = response_data['results'][0]['content']['title']
             except:
-                product_name = None
+                product_name = "not Available"
             # Product Price
             try:
-                product_price = float(response_data['results'][0]['content']['pricing']['online'][0]['price'])
+                product_price = response_data['results'][0]['content']['price']
             except:
-                pass
+                product_price = "not Available"
             # seller Link
             try:
-                seller_link = response_data['results'][0]['content']['pricing']['online'][0]['seller_link']
+                seller_link = response_data['results'][0]['content']['url']
             except:
-                seller_link = None
+                seller_link = "not Available"
             # seller Name
             try:
-                seller_name = response_data['results'][0]['content']['pricing']['online'][0]['seller']
+                seller_name = response_data['results'][0]['content']['brand']
             except:
-                seller_name = None
+                seller_name = "not Available"
             # Google Shooping Link
             try:
                 google_shopping_link = response_data['results'][0]['content']['url']
             except:
-                google_shopping_link = None
+                google_shopping_link = "not Available"
+            try:
+                description = response_data['results'][0]['content']['description']
+            except:
+                description = "not Available"
+            try:
+                parse_status_code = response_data['results'][0]['content']['parse_status_code']
+            except:
+                parse_status_code ="not Available"
+            
             return product_id, product_image, product_name, product_price, seller_link, seller_name, google_shopping_link
         
     
         if url_link:
-            try:
-                oxy_account = oxylab_account.objects.get(id=1)
-                username = oxy_account.username
-                password = oxy_account.password
-            except oxylab_account.DoesNotExist:
-                return Response({'Message': 'Error in oxylabs credential '}, status=status.HTTP_400_BAD_REQUEST)
-        
-            data_res= url_to_cart(url_link)
+            data_res = get_url_data(url_link) # NEW CODE UNIVERSAL SCRAPER
             try:
                 if data_res['message'] == "Your provided google shopping url is not supported":
                     return Response({"Message":"The given seller link is not valid"})
             except:
                 pass
             
-            product_id, product_image, product_name, product_price, seller_link, seller_name, google_shopping_link =get_details(data_res)
+            product_id, product_image, product_name, product_price, seller_link, seller_name, google_shopping_link = get_details(data_res) # NEW CODE UNIVERSAL SCRAPER
 
             print(type(user),user)
             # print(type(quantity),quantity)
