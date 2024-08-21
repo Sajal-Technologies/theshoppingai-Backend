@@ -1210,7 +1210,7 @@ class OxylabProductDetailView(APIView):
                 "variants": None,
                 "description": description,
                 "related_items": None,
-                "title": "You might also like",
+                # "title": "You might also like",
                 "parse_status_code": parse_status_code
             }
 
