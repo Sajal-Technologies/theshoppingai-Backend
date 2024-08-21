@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     'auths',
     'rest_framework_simplejwt',
     'rest_framework',
-    'corsheaders'
+    'corsheaders',
+    'drf_yasg'
 ]
 
 MIDDLEWARE = [
@@ -143,6 +144,7 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
+    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',
 }
 
 SIMPLE_JWT = {
@@ -169,7 +171,7 @@ AUTH_USER_MODEL = "auths.CustomUser"
 
 LOGIN_REDIRECT_URL = "auths"
 LOGOUT_REDIRECT_URL = "auths"
-
+LOGIN_URL = '/api/login/'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.hostinger.com'  # GoDaddy SMTP server

@@ -3464,3 +3464,229 @@ class GetALLCategoryList(APIView):
             }, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'Message': f"Unable to get Category List: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+
+class CategoryPageWithProductIDFilter(APIView):
+
+    cat_mapping = {
+            'Animals & Pet Supplies': 'Mordern Animals & Pet Supplies',
+            'Apparel & Accessories': 'Mordern Apparel & Accessories',
+            'Arts & Entertainment': 'Mordern Arts & Entertainment',
+            'Baby & Toddler': 'Mordern Baby & Toddler',
+            'Business & Industrial': 'Mordern Business & Industrial',
+            'Cameras & Optics': 'Mordern Cameras & Optics',
+            'Electronics': 'Mordern Electronics',
+            'Food, Beverages & Tobacco': 'Mordern Food, Beverages & Tobacco',
+            'Furniture': 'Mordern Furniture',
+            'Hardware': 'Mordern Hardware',
+            'Health & Beauty': 'Mordern Health & Beauty',
+            'Home & Garden': 'Mordern Home & Garden',
+            'Luggage & Bags': 'Mordern Luggage & Bags',
+            'Mature': 'Mordern Mature',
+            'Media': 'Mordern Media',
+            'Office Supplies': 'Mordern Office Supplies',
+            'Religious & Ceremonial': 'Mordern Religious & Ceremonial',
+            'Software': 'Mordern Software',
+            'Sporting Goods': 'Mordern Sporting Goods',
+            'Toys & Games': 'Mordern Toys & Games',
+            'Vehicles & Parts': 'Mordern Vehicles & Parts',
+            "Lights": "Modern Lighting Solutions"
+        }
+
+
+    def post(self, request):
+        logger = logging.getLogger(__name__)  # Get logger for this module
+
+        # Log the incoming request details
+        logger.info(f"Received POST request: {request.data}")
+
+        query = request.data.get("product_name")
+        ppr_min = request.data.get("ppr_min", None)
+        ppr_max = request.data.get("ppr_max", None)
+        filter_all = request.data.get("filter_all", None)
+        sort_by = request.data.get("sort_by", 'relevance')  # Default to 'relevance'
+        page_number = request.data.get("page_number", 1)  # Default to 1 if not provided
+        cat_id = request.data.get("cat_id")
+
+        if cat_id:
+            try:
+                cat_model = category_model.objects.get(id = cat_id)
+                mapped_query = cat_model.mapping_name
+            except ObjectDoesNotExist:
+                return Response({'Message': 'No Category Found'}, status=status.HTTP_400_BAD_REQUEST)
+            if not mapped_query:
+                return Response({'Message': 'Invalid query. Please use a valid category from category input_list.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        else:
+            try:
+                cat_model = category_model.objects.filter(category_name = query).first()
+                mapped_query = cat_model.mapping_name
+                print("USING CATEGORY MODEL")
+            except:
+                # Validate and map the query
+                mapped_query = self.cat_mapping.get(query)
+                print("USING QUERY LIST")
+            if not mapped_query:
+                return Response({'Message': 'Invalid query. Please use a valid category from category input_list.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+        if not query and not cat_id:
+            return Response({'Message': 'Please provide query or category_id to search'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Get oxylabs credentials
+        try:
+            oxy_account = oxylab_account.objects.get(id=1)
+            username = oxy_account.username
+            password = oxy_account.password
+        except oxylab_account.DoesNotExist:
+            return Response({'Message': 'Error in oxylabs credential '}, status=status.HTTP_400_BAD_REQUEST)
+
+        query_main = str(mapped_query).replace(" ", "+")
+
+        sort_mapping = {
+            'relevance': 'r',
+            'low_to_high': 'p',
+            'high_to_low': 'pd',
+            'rating': 'rv'
+        }
+
+        sort_key = sort_mapping.get(sort_by, 'r')  # Default to 'relevance' if sort_by is invalid
+
+        # Build context dynamically based on provided filters
+        context = [{'key': 'sort_by', 'value': sort_key}]
+        
+        if ppr_min is not None:
+            context.append({'key': 'min_price', 'value': ppr_min})
+        
+        if ppr_max is not None:
+            context.append({'key': 'max_price', 'value': ppr_max})
+
+        if filter_all is not None:
+            context.append({'key': 'tbs', 'value': f"tbm=shop&q={query_main}&tbs=mr:1,{filter_all}"})
+
+        def get_final_url(original_url):
+            response = requests.get(original_url, allow_redirects=True)
+            return response.url
+            
+        def fetch_page(page_number):
+            payload = {
+                'source': 'google_shopping_search',
+                'domain': 'co.in',
+                'query': query_main,
+                "start_page": page_number,
+                'pages': 1,
+                'parse': True,
+                'locale': 'en',
+                "geo_location": "India",
+                'context': context,
+            }
+            try:
+                response = requests.post(
+                    'https://realtime.oxylabs.io/v1/queries',
+                    auth=(username, password),
+                    json=payload,
+                )
+                response.raise_for_status()
+                data = response.json()
+                return data.get('results', [])
+            except requests.RequestException as e:
+                logger.error(f"Error fetching page {page_number}: {e}")
+                return []
+
+        try:
+            # Fetch data for the specified page
+            results = fetch_page(page_number)
+
+            shopping_data = []
+            search_history_entries = []
+            last_page_number = []
+            current_page_number = []
+            for result in results:
+                organic_results = result.get('content', {}).get('results', {}).get('organic', [])
+                last_page_number.append(result.get('content', {})['last_visible_page'])
+                current_page_number.append(result.get('content', {})['page'])
+                for item in organic_results:
+                    try:
+                        if not "product_id" in item:
+                            del item 
+                            continue
+                    except Exception as e:
+                        logger.error(f"Error Removing item without Product_id: {e}")
+
+                    try:
+                        if 'url' in item:
+                            item['url'] = "https://www.google.com" + item['url']
+                    except Exception as e:
+                        logger.error(f"Error parsing URL for item: {e}")
+
+                    try:
+                        if 'merchant' in item and 'url' in item['merchant']:
+                            item['merchant']['url'] = self.fix_url(item['merchant']['url'])
+                    except Exception as e:
+                        logger.error(f"Error parsing URL for item: {e}")
+
+                    shopping_data.append(item)
+
+                    product_id = item.get('product_id')
+                    if product_id is None or product_id == "":
+                        logger.error(f"Invalid product_id: {product_id}")
+                        continue
+
+                    search_history_entries.append(
+                        search_history(
+                            query=query,
+                            product_id=product_id,
+                            google_url=item['url'],
+                            seller_name=item['merchant']['name'],
+                            seller_url=item['merchant']['url'],
+                            price=item['price'],
+                            product_title=item['title'],
+                            rating=item.get('rating'),
+                            reviews_count=item.get('reviews_count'),
+                            product_pic=item.get('thumbnail')
+                        )
+                    )
+
+            logger.info(f"Total search_history entries to create: {len(search_history_entries)}")
+
+            with transaction.atomic():
+                try:
+                    search_history.objects.bulk_create(search_history_entries, ignore_conflicts=True)
+                except Exception as e:
+                    logger.error(f"Error creating search_history entries: {e}")
+
+            logger.info(f"Total products fetched: {len(shopping_data)}")
+
+            try:
+                passed= []
+                url_list = ["amazon", "flipkart", "snapdeal", "myntra", "ajio", "paytmmall", "tatacliq", "shopclues", "myntra", "pepperfry", "nykaa", "limeroad", "faballey", "zivame", "koovs", "clovia", "biba", "wforwoman", "bewakoof", "urbanladder", "croma", "reliancedigital", "vijaysales", "gadgets360", "poorvikamobile", "samsung", "oneplus", "mi", "dell", "apple", "bigbasket", "blinkit", "amazon", "jiomart", "dunzo", "spencers", "naturesbasket", "zopnow", "shop", "starquik", "urbanladder", "pepperfry", "fabindia", "hometown", "woodenstreet", "thedecorkart", "chumbak", "hometown", "livspace", "thesleepcompany", "firstcry", "healthkart", "netmeds", "1mg", "lenskart", "tanishq", "bluestone", "caratlane", "zivame", "purplle", "amazon", "flipkart", "in", "crossword", "sapnaonline", "booksadda", "bookchor", "amazon", "a1books", "scholastic", "headsupfortails", "petsworld", "dogspot", "petshop18", "pawsindia", "marshallspetzone", "petsglam", "petsy", "petnest", "justdogsstore", "infibeam", "shoppersstop", "shopping", "craftsvilla", "naaptol", "shopping", "saholic", "flipkart", "homeshop18", "futurebazaar", "ritukumar", "shoppersstop", "thelabellife", "andindia", "globaldesi", "sutastore", "nykaafashion", "jaypore", "amantelingerie", "myntra", "happimobiles", "electronicscomp", "jio", "unboxindia", "samsung", "gadgetbridge", "store", "poorvikamobile", "happimobiles", "vlebazaar", "dmart", "amazon", "naturesbasket", "supermart", "naturesbasket", "spencers", "bigbasket", "moreretail", "easyday", "reliancefresh", "houseofpataudi", "urbanladder", "ikea", "zarahome", "indigoliving", "goodearth", "westside", "godrejinterio", "fabfurnish", "pepperfry", "limeroad", "tanishq", "pcjeweller", "kalyanjewellers", "candere", "caratlane", "bluestone", "voylla", "orra", "sencogoldanddiamonds", "bookishsanta", "pustakmandi", "wordery", "starmark", "bargainbooks", "bookdepository", "worldofbooks", "crossword", "bookswagon", "kitabay", "pupkart", "whiskas", "petshop", "petsy", "headsupfortails", "petsworld", "justdogs", "barksandmeows", "petophilia", "waggle", "themancompany", "beardo", "mamaearth", "in", "plumgoodness", "buywow", "ustraa", "myglamm", "bombayshavingcompany", "khadinatural", "zomato", "swiggy", "freshmenu", "box8", "faasos", "dineout", "rebelfoods", "behrouzbiryani", "dominos", "pizzahut", "makemytrip", "goibibo", "yatra", "cleartrip", "oyorooms", "airbnb", "trivago", "booking", "agoda", "expedia", "urbanclap", "housejoy", "jeeves", "onsitego", "urbanladder", "pepperfry", "homecentre", "rentomojo", "furlenco", "nestaway", "tata"]
+                for i in shopping_data:
+                    merchant_name = i.get('merchant', {}).get('name', '')
+                    url  = i.get('merchant', {}).get('url', '')
+                    
+                    # Check if the merchant name or a portion of it is in the URL list
+                    if any(url.lower() in merchant_name.lower() for url in url_list):
+                        # print(f"Merchant name '{merchant_name}' found in URL list.")
+                        passed.append(i)
+                    else:
+                        print(url)
+                        print(f"Merchant name '{merchant_name}' not found in URL list.")
+                    
+                
+                print({"Message":"Filter out result on 200 website Successful","data":passed})
+            except Exception as e:
+                print({'Message': f'Unable to filter result: {str(e)}'})
+            
+            return Response({'Message': 'Fetched the Product data Successfully', "Product_data": passed, "Last Page": last_page_number, "Current Page":current_page_number}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({'Message': f'Failed to Fetch the Product data : {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+    @staticmethod
+    def fix_url(encoded_url):
+        parsed_url = urlparse(encoded_url)
+        query_params = parse_qs(parsed_url.query)
+        if 'url' in query_params:
+            return query_params['url'][0]
+        return encoded_url
