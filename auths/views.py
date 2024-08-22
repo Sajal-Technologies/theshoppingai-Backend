@@ -1323,7 +1323,7 @@ class OxylabProductDetailView(APIView):
                 seller_lst = []
                 if 'pricing' in data['results'][0]['content'] and 'online' in data['results'][0]['content']['pricing']:
                     for seller_info in data['results'][0]['content']['pricing']['online']: # -----> passed on fail  ---> 200 website check ---> Continue
-                        if seller_info["seller_link"] =="" or not "seller_link" in seller_info:
+                        if "seller_link" not in seller_info or seller_info["seller_link"] == "":
                             logger.error(f'Unable to fetch the Product detail: {str(e)}')
                             # return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_404_NOT_FOUND)
                             del seller_info
