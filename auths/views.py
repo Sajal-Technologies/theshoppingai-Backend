@@ -1269,7 +1269,7 @@ class OxylabProductDetailView(APIView):
                 
                 data =response.json()#['results'][0]['content']
 
-                print(data)
+                # print(data)
 
                 # URL prefix to prepend
                 url_prefix = 'https://www.google.com'
@@ -1322,12 +1322,16 @@ class OxylabProductDetailView(APIView):
                 # Update seller links
                 seller_lst = []
                 if 'pricing' in data['results'][0]['content'] and 'online' in data['results'][0]['content']['pricing']:
+                    # if data['results'][0]['content']['pricing']['online'] ==[]:
+                    #     # Return a response indicating no pricing information was found
+                    #     print("data['results'][0]['content']['pricing']['online']---------->",data['results'][0]['content']['pricing']['online'])
+                    #     return Response({'Message': 'No pricing information found.'}, status=status.HTTP_404_NOT_FOUND)
                     for seller_info in data['results'][0]['content']['pricing']['online']: # -----> passed on fail  ---> 200 website check ---> Continue
-                        if "seller_link" not in seller_info or seller_info["seller_link"] == "":
-                            logger.error(f'Unable to fetch the Product detail: {str(e)}')
-                            # return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_404_NOT_FOUND)
-                            del seller_info
-                            continue
+                        # if "seller_link" not in seller_info or seller_info["seller_link"] == "":
+                        #     logger.error(f'Unable to fetch the Product detail: {str(e)}')
+                        #     # return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_404_NOT_FOUND)
+                        #     del seller_info
+                        #     continue
                         if filter_merchants([seller_info]) == False:
                             print("Falied Seller Type",seller_info)
                         else:
@@ -1384,7 +1388,7 @@ class OxylabProductDetailView(APIView):
                 # updated_json = json.dumps(data, indent=2,ensure_ascii=False)
 
                 # Print prettified response to stdout.
-                pprint(data)
+                # pprint(data)
                 try:
                     # data = response.json()
                     prod_data = data['results'][0]['content']
@@ -1392,7 +1396,7 @@ class OxylabProductDetailView(APIView):
                     if prod_data ['parse_status_code'] == 12009:    
                         return Response({'Message': 'Unable to fetch the Product detail'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                     # print(data)
-                    logger.debug(f"Received API response: {prod_data}")
+                    # logger.debug(f"Received API response: {prod_data}")
 
                     return Response({'Message': 'Fetch the Product detail Successfully', "Product_detail": prod_data}, status=status.HTTP_200_OK)
                 except Exception as e:
