@@ -1235,11 +1235,14 @@ class OxylabProductDetailView(APIView):
             try:
                 res = get_url_data(url_link)
                 res_all = get_details(res)
+                if res_all['pricing']['online']['seller_link'] =="":
+                    logger.error(f'Unable to fetch the Product detail: {str(e)}')
+                    return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_404_NOT_FOUND)
                 print(res_all)
                 return Response({'Message': 'Fetch the Product detail Successfully', "Product_detail": res_all}, status=status.HTTP_200_OK)
             except Exception as e:
                 logger.error(f'Unable to fetch the Product detail: {str(e)}')
-                return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_404_NOT_FOUND)
 
         
         if product_id:
@@ -1320,6 +1323,11 @@ class OxylabProductDetailView(APIView):
                 seller_lst = []
                 if 'pricing' in data['results'][0]['content'] and 'online' in data['results'][0]['content']['pricing']:
                     for seller_info in data['results'][0]['content']['pricing']['online']: # -----> passed on fail  ---> 200 website check ---> Continue
+                        if seller_info["seller_link"] =="":
+                            logger.error(f'Unable to fetch the Product detail: {str(e)}')
+                            # return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_404_NOT_FOUND)
+                            del seller_info
+                            continue
                         if filter_merchants([seller_info]) == False:
                             print("Falied Seller Type",seller_info)
                         else:
