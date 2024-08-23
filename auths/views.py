@@ -1306,26 +1306,26 @@ class OxylabProductDetailView(APIView):
                         "airbnb", "trivago", "booking", "agoda", "expedia", "urbanclap", "housejoy", 
                         "jeeves", "onsitego", "homecentre", "rentomojo", "furlenco", "nestaway", "tata"
                     ]
-                    # try:
-                    #     # Check if any merchant name is in the URL list
-                    #     return any(
-                    #         any(url.lower() in merchant.get('seller', '').lower() for url in url_list)
-                    #         for merchant in shopping_data
-                    #     )
-                    # except Exception as e:
-                    #     print(f'Error: {str(e)}')
-                    #     return False
+
                     try:
-                        # Adding possible domain extensions to the URL list
-                        url_patterns = [re.escape(url) + r'(?:\.[a-z]{2,3})?' for url in url_list]
+                        # Remove duplicates from the URL list
+                        url_list = list(set(url_list))
+
+                        # Convert URL list to lowercase for case-insensitive comparison
+                        url_list = [url.lower() for url in url_list]
+
+                        # Function to normalize the merchant name
+                        def normalize_name(name):
+                            # Remove domain extensions and symbols
+                            name = re.sub(r'\.(com|in|org|net|co)\b', '', name, flags=re.IGNORECASE)
+                            # name = re.sub(r'\W+', '', name)  # Remove all non-alphanumeric characters
+                            return name.lower()
                         
-                        # Create a pattern to match any of the URLs in the list with optional domain extensions
-                        pattern = re.compile(r'\b(?:' + '|'.join(url_patterns) + r')\b', re.IGNORECASE)
-                        
-                        # Check if any merchant name matches the URL list
+                        # Check if any normalized merchant name is in the URL list
                         return any(
-                            any(pattern.search(merchant.get('seller', '')) for merchant in shopping_data)
+                            normalize_name(merchant.get('seller', '')) in url_list for merchant in shopping_data
                         )
+
                     except Exception as e:
                         print(f'Error: {str(e)}')
                         return False
@@ -1402,7 +1402,7 @@ class OxylabProductDetailView(APIView):
                 # updated_json = json.dumps(data, indent=2,ensure_ascii=False)
 
                 # Print prettified response to stdout.
-                # pprint(data)
+                pprint(data)
                 try:
                     # data = response.json()
                     prod_data = data['results'][0]['content']
