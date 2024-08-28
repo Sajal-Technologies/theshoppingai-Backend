@@ -1237,10 +1237,13 @@ class OxylabProductDetailView(APIView):
             try:
                 res = get_url_data(url_link)
                 res_all = get_details(res)
-                if res_all['pricing']['online']['seller_link'] =="":
+                print(res_all)
+                print("Before")
+                if res_all['pricing']['online'][0]['seller_link'] =="":
                     logger.error(f'Unable to fetch the Product detail: {str(e)}')
                     return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_404_NOT_FOUND)
                 print(res_all)
+                print("After")
                 return Response({'Message': 'Fetch the Product detail Successfully', "Product_detail": res_all}, status=status.HTTP_200_OK)
             except Exception as e:
                 logger.error(f'Unable to fetch the Product detail: {str(e)}')
