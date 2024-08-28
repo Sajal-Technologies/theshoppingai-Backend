@@ -111,6 +111,7 @@ urlpatterns = [
 
     path('api/oxy-category-with-productid/', CategoryPageWithProductIDFilter.as_view(), name='api-CategoryPageWithProductIDFilter'), 
 
+    path('api/suggestion-api/', SuggestionAPIView.as_view(), name ="api-SuggestionAPIView"),
 
 
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),

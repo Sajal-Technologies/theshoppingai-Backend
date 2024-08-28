@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import CustomUser
+from .models import CustomUser, search_history
 import random, string
 # from django.contrib.postgres.fields import JSONField
 def generate_random_string(length=15):
@@ -131,3 +131,14 @@ class UserModifyPasswordSerializer(serializers.Serializer):
         instance.set_password(validated_data['new_password'])
         instance.save()
         return instance
+    
+
+class historySerializer(serializers.ModelSerializer):
+    """ 
+    Get a login user's data and send data
+    """
+    class Meta:
+        model = search_history
+        fields = (
+                  '__all__'
+              )

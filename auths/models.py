@@ -100,6 +100,8 @@ class search_history(TimeStampModel):
     rating = models.FloatField(null=True,blank=True)
     reviews_count = models.IntegerField(null=True,blank=True)
     product_pic = models.URLField(null=True,blank=True)
+    currency = models.CharField(max_length=250, null=True, blank=True)
+    delivery = models.CharField(max_length=250, null=True, blank=True)
 
 class cart(TimeStampModel):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)

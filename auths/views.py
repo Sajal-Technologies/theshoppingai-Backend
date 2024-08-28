@@ -7,7 +7,7 @@ from .email import send_otp_via_email
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from .utils import generate_random_string, get_user_id_from_token
-from .serializers import  UserChangePasswordSerializer, UserLoginSerializer, UserProfileSerializer, UserRegistrationSerializer, UserChangePasswordSerializer, UserModifyPasswordSerializer
+from .serializers import historySerializer, UserChangePasswordSerializer, UserLoginSerializer, UserProfileSerializer, UserRegistrationSerializer, UserChangePasswordSerializer, UserModifyPasswordSerializer
 from rest_framework.permissions import BasePermission, IsAuthenticated, AllowAny
 from .renderers import UserRenderer
 from django.views import View
@@ -914,6 +914,8 @@ class OxylabSearchView(APIView):
                             seller_url=item['merchant']['url'],
                             price=item['price'],
                             product_title=item['title'],
+                            delivery=item['delivery'],
+                            currency=item['currency'],
                             rating=item.get('rating'),
                             reviews_count=item.get('reviews_count'),
                             product_pic=item.get('thumbnail')
@@ -2637,6 +2639,8 @@ class OxylabPageONSale(APIView):
                             seller_url=item['merchant']['url'],
                             price=item['price'],
                             product_title=item['title'],
+                            delivery=item['delivery'],
+                            currency=item['currency'],
                             rating=item.get('rating'),
                             reviews_count=item.get('reviews_count'),
                             product_pic=item.get('thumbnail')
@@ -2806,6 +2810,8 @@ class OxylabPageSearchView(APIView):
                             seller_url=item['merchant']['url'],
                             price=item['price'],
                             product_title=item['title'],
+                            delivery=item['delivery'],
+                            currency=item['currency'],
                             rating=item.get('rating'),
                             reviews_count=item.get('reviews_count'),
                             product_pic=item.get('thumbnail')
@@ -2924,7 +2930,7 @@ class GetFiltersView(APIView):
                     if str(j['url'].split("tbs=")[-1].split('&')[0].split(',')[-1]).startswith('merchagg'):
                         tct[j['value']] = j['url'].split("tbs=")[-1].split('&')[0].split(',')[-1].split('%')[0]
                     else:
-                        tct[j['value']] = j['url'].split("tbs=")[-1].split('&')[0]#.split(',')[-1]
+                        tct[j['value']] = j['url'].split("tbs=")[-1].split('&')[0].split(',')[-1]
                         
                 # Update the dct dictionary with filter_name and its corresponding tct dictionary
                 dct[filter_name] = tct
@@ -3158,6 +3164,8 @@ class OxylabCategoryPageView(APIView):
                             seller_url=item['merchant']['url'],
                             price=item['price'],
                             product_title=item['title'],
+                            delivery=item['delivery'],
+                            currency=item['currency'],
                             rating=item.get('rating'),
                             reviews_count=item.get('reviews_count'),
                             product_pic=item.get('thumbnail')
@@ -3724,6 +3732,8 @@ class CategoryPageWithProductIDFilter(APIView):
                             seller_url=item['merchant']['url'],
                             price=item['price'],
                             product_title=item['title'],
+                            delivery=item['delivery'],
+                            currency=item['currency'],
                             rating=item.get('rating'),
                             reviews_count=item.get('reviews_count'),
                             product_pic=item.get('thumbnail')
@@ -3772,3 +3782,49 @@ class CategoryPageWithProductIDFilter(APIView):
         if 'url' in query_params:
             return query_params['url'][0]
         return encoded_url
+    
+class SuggestionAPIView(APIView):
+    def post(self, request):
+        query = request.data.get("product_name")
+        if not query:
+            return Response({"error": "product_name is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Fetch the search history items matching the query
+        history_items = search_history.objects.filter(query=query).order_by('-id')[:10]
+
+        if not history_items:
+            # No suggestions available
+            return Response({'Message': 'No Suggestion Available'}, status=status.HTTP_404_NOT_FOUND)
+        history_items = list(history_items.values())
+        
+        try:
+            # Serialize the history items
+            serializer = historySerializer(history_items, many=True)  # 'many=True' is used for serializing a queryset
+            tmp = []
+            print(serializer.data)
+            print(serializer.data[0])
+
+            for row in serializer.data:
+                tmp.append(
+                {
+                # "pos": 1,
+                "url": row.get("google_url"),
+                "type": "grid",
+                "price": row.get("price"),
+                "title": row.get("product_title"),
+                "rating": row.get("rating"),
+                "currency": row.get("currency"),
+                "delivery": row.get("delivery"),
+                "merchant": {
+                    "url": row.get("seller_url"),
+                    "name": row.get("seller_name")
+                },
+                "price_str": f"₹{row.get("price")}",
+                "thumbnail": row.get("product_pic"),
+                "product_id": row.get("product_id"),
+                # "pos_overall": 1,
+                "reviews_count": row.get("reviews_count")})
+                
+            return Response({"Message":"Suggestion fetched Successfully","Suggestions": tmp}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"Message":f"Error Ocuured while fetching Suggestion: {str(e)}"}, status=status.HTTP_404_NOT_FOUND)
