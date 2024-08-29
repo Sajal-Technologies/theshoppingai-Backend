@@ -157,7 +157,11 @@ class category_model(TimeStampModel):
 
     def __str__(self):
         return self.category_name
-
+    
+class prodid_mapping(TimeStampModel):
+    product_id = models.CharField(max_length=100)
+    seller_link = models.URLField()
+    price = models.FloatField(null=True, blank=True)
 
     
 #-----------------------------------------------------Code BY Adil-------------------------------------------------------------
