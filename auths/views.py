@@ -2837,16 +2837,46 @@ class OxylabPageSearchView(APIView):
                     except Exception as e:
                         logger.error(f"Error parsing URL for item: {e}")
 
+                    # try:
+                    #     if 'product_id' not in item or not item['product_id']:
+                    #         item['product_id'] = generate_unique_product_id()
+                    #         prodid_mapping.objects.create(
+                    #             product_id=item['product_id'],
+                    #             seller_link=item['merchant']['url'],
+                    #             price=item['price'],
+                    #             seller_name=item['merchant']['name'],
+                    #             title=item['title'],
+                    #             delivery=item['delivery'],
+                    #         )
+                    # except Exception as e:
+                    #     logger.error(f"Error getting product_id for item: {e}")
+
+
                     try:
                         if 'product_id' not in item or not item['product_id']:
-                            item['product_id'] = generate_unique_product_id()
-                            prodid_mapping.objects.create(
-                                product_id=item['product_id'],
-                                seller_link=item['merchant']['url'],
-                                price=item['price'],
-                            )
+                            seller_link = item['merchant']['url']
+                            
+                            # Check if seller_link exists in prodid_mapping
+                            existing_entry = prodid_mapping.objects.filter(seller_link=seller_link).first()
+                            
+                            if existing_entry:
+                                # If entry exists, use the existing product_id
+                                item['product_id'] = existing_entry.product_id
+                            else:
+                                # If entry does not exist, generate a new product_id and create a new entry
+                                item['product_id'] = generate_unique_product_id()
+                                prodid_mapping.objects.create(
+                                    product_id=item['product_id'],
+                                    seller_link=seller_link,
+                                    price=item['price'],
+                                    seller_name=item['merchant']['name'],
+                                    title=item['title'],
+                                    delivery=item['delivery'],
+                                )
+                        
                     except Exception as e:
                         logger.error(f"Error getting product_id for item: {e}")
+                    
 
                     shopping_data.append(item)
 

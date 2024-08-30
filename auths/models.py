@@ -162,6 +162,9 @@ class prodid_mapping(TimeStampModel):
     product_id = models.CharField(max_length=100)
     seller_link = models.URLField()
     price = models.FloatField(null=True, blank=True)
+    seller_name = models.CharField(max_length=250,null=True, blank=True)
+    title = models.TextField(null=True,blank=True)
+    delivery = models.CharField(max_length=250,null=True,blank=True)
 
     
 #-----------------------------------------------------Code BY Adil-------------------------------------------------------------
