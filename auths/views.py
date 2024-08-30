@@ -1452,8 +1452,6 @@ class AddtoCartView(APIView):
 
         url_link = request.data.get('seller_link')
 
-#==================================================== Add to cart Via Seller Link ==============================================
-
         def get_url_data(url):
             try:
                 oxy_account = oxylab_account.objects.get(id=1)
@@ -1479,14 +1477,73 @@ class AddtoCartView(APIView):
             )
             print("Fetched json Succesfully")
             
-            
-            
-            # Instead of response with job status and results url, this will return the
-            # JSON response with results.
-            # pprint(response.json())
             return response.json()
-        
 
+
+        def get_details2(response_data,obj):
+
+            # Product ID
+            try:
+                product_id = obj.product_id
+            except:
+                product_id = "not Available"
+            # product_image
+            try:
+                if response_data['results'][0]['content']['image'] is not None:
+                    product_image = response_data['results'][0]['content']['image']
+                else:
+                    product_image = obj.product_image
+            except:
+                product_image = obj.product_image
+            # Product Name
+            try:
+                if response_data['results'][0]['content']['title'] is not None:
+                    product_name = response_data['results'][0]['content']['title']
+                else:
+                    product_name = obj.title
+            except:
+                product_name = obj.title
+            # Product Price
+            try:
+                if response_data['results'][0]['content']['price'] is not None:
+                    product_price = response_data['results'][0]['content']['price']
+                else:
+                    product_price = obj.price
+            except:
+                product_price = obj.price
+            # seller Link
+            try:
+                if response_data['results'][0]['content']['url'] is not None:
+                    seller_link = response_data['results'][0]['content']['url']
+                else:
+                    seller_link = obj.seller_link
+            except:
+                seller_link = obj.seller_link
+            # seller Name
+            try:
+                if response_data['results'][0]['content']['brand'] is not None:
+                    seller_name = response_data['results'][0]['content']['brand']
+                else:
+                    seller_name = obj.seller_name
+            except:
+                seller_name = obj.seller_name
+            # Google Shooping Link
+            try:
+                google_shopping_link = response_data['results'][0]['content']['url']
+            except:
+                google_shopping_link = "not Available"
+            try:
+                description = response_data['results'][0]['content']['description']
+            except:
+                description = "not Available"
+            try:
+                parse_status_code = response_data['results'][0]['content']['parse_status_code']
+            except:
+                parse_status_code ="not Available"
+            return product_id, product_image, product_name, product_price, seller_link, seller_name, google_shopping_link
+
+#==================================================== Add to cart Via Seller Link ==============================================
+        
         def get_details(response_data):
             def generate_unique_product_id():
                 # Generate a UUID and take the integer representation
@@ -1594,111 +1651,148 @@ class AddtoCartView(APIView):
         if not products_id or not request.data.get('product_id'):
             return Response({"Message":"Product not Found!!!"},status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            oxy_account = oxylab_account.objects.get(id=1)
-            username = oxy_account.username
-            password = oxy_account.password
-        except oxylab_account.DoesNotExist:
-            return Response({'Message': 'Error in oxylabs credential '}, status=status.HTTP_400_BAD_REQUEST)
+        if str(products_id).startswith("NA_"):
+            try:
+                obj = prodid_mapping.objects.filter(product_id=products_id).first()
+                try:
+                    print("i am here")
+                    res = get_url_data(obj.seller_link)
+                    print("i was here")
+                    print(res)
+                except:
+                    print("Not able to get data from Url link")
+                    res = {}
+                product_id, product_image, product_name, product_price, seller_link, seller_name, google_shopping_link = get_details2(res,obj)
+                
+                try:
+
+                    cart.objects.create(
+                    user= user,
+                    # quantity = quantity, # IT SHOULD NOT BE ADDED TO CART AS WE DONT HAVE ACCESS TO SELLER WEBSITE WE ONLY AHVE LINK
+                    product_id = product_id,
+                    google_shopping_url = google_shopping_link,
+                    product_name = product_name,
+                    product_image = product_image,
+                    price = product_price,
+                    seller_link = seller_link,
+                    seller_name = seller_name
+                    )
+
+                    return Response({"Message":"Product added to cart"},status=status.HTTP_201_CREATED)
+                except Exception as e:
+                    return Response({"Message":f"Failed to add product to cart: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
+
+            except Exception as e:
+                logger.error(f'Unable to fetch the Product detail: {str(e)}')
+                return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_404_NOT_FOUND)
+
+        else:
+
+            try:
+                oxy_account = oxylab_account.objects.get(id=1)
+                username = oxy_account.username
+                password = oxy_account.password
+            except oxylab_account.DoesNotExist:
+                return Response({'Message': 'Error in oxylabs credential '}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
-        payload = {
-            'source': 'google_shopping_product',
-            'domain': 'co.in',
-            'query': products_id, # Product ID
-            'parse': True,
-            'locale': 'en'
-        }
+            payload = {
+                'source': 'google_shopping_product',
+                'domain': 'co.in',
+                'query': products_id, # Product ID
+                'parse': True,
+                'locale': 'en'
+            }
 
-        try:
+            try:
 
-            # Get response.
-            response = requests.request(
-                'POST',
-                'https://realtime.oxylabs.io/v1/queries',
-                auth=(username, password),
-                json=payload,
-            )
+                # Get response.
+                response = requests.request(
+                    'POST',
+                    'https://realtime.oxylabs.io/v1/queries',
+                    auth=(username, password),
+                    json=payload,
+                )
+                
+                data =response.json()#['results'][0]['content']
+
+                # print(data)
+                def get_final_url(original_url):
+                    response = requests.get(original_url, allow_redirects=True,timeout=5)
+                    return response.url
+
+                # URL prefix to prepend
+                url_prefix = 'https://www.google.com'
+
+                # Update seller links
+                if 'pricing' in data['results'][0]['content'] and 'online' in data['results'][0]['content']['pricing']:
+                    for seller_info in data['results'][0]['content']['pricing']['online']:
+                        seller_link = seller_info.get('seller_link')
+                        if seller_link and seller_link.startswith('/'):
+                            link_seller = url_prefix + seller_link
+                            seller_info['seller_link'] = get_final_url(link_seller)
+                            # seller_info['seller_link'] = str(seller_link).replace("/url?q=",'')#url_prefix + seller_link
+
+                # Update review URLs for 1, 3, 4, and 5 stars
+                if 'reviews' in data['results'][0]['content'] and 'reviews_by_stars' in data['results'][0]['content']['reviews']:
+                    for rating in ['1', '3', '4', '5']:
+                        reviews_data = data['results'][0]['content']['reviews']['reviews_by_stars'].get(rating)
+                        if reviews_data:
+                            review_url = reviews_data.get('url')
+                            if review_url and review_url.startswith('/'):
+                                reviews_data['url'] = url_prefix + review_url
+
+                # pprint(data)
+                response_data = data['results'][0]['content']
+                # response_data = data
+            except Exception as e:
+                    return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            print("Product data fetched Succesfully")
+
+            try:
+                quantity = request.data.get("quantity",1)
+                # product_id = products_id
+                google_shopping_url = response_data['url']
+                product_name = response_data['title']
+                product_image = response_data['images']['full_size'][0]
+                price = response_data['pricing']['online'][0]['price']
+                seller_link = response_data['pricing']['online'][0]['seller_link']
+                # seller_logo = data['url']
+                seller_name = response_data['pricing']['online'][0]['seller']
+            except Exception as e:
+                return Response({"Message":f"Error Occured: {str(e)}"})
             
-            data =response.json()#['results'][0]['content']
+            print("Product details fetched Succesfully")
 
-            # print(data)
-            def get_final_url(original_url):
-                response = requests.get(original_url, allow_redirects=True)
-                return response.url
+            print(type(user),user)
+            print(type(quantity),quantity)
+            print(type(products_id),products_id)
+            print(type(google_shopping_url),google_shopping_url)
+            print(type(product_name),product_name)
+            print(type(product_image),product_image)
+            print(type(price),price)
+            print(type(seller_link),seller_link)
+            print(type(seller_name),seller_name)
 
-            # URL prefix to prepend
-            url_prefix = 'https://www.google.com'
+            try:
 
-            # Update seller links
-            if 'pricing' in data['results'][0]['content'] and 'online' in data['results'][0]['content']['pricing']:
-                for seller_info in data['results'][0]['content']['pricing']['online']:
-                    seller_link = seller_info.get('seller_link')
-                    if seller_link and seller_link.startswith('/'):
-                        link_seller = url_prefix + seller_link
-                        seller_info['seller_link'] = get_final_url(link_seller)
-                        # seller_info['seller_link'] = str(seller_link).replace("/url?q=",'')#url_prefix + seller_link
+                cart.objects.create(
+                user= user,
+                quantity = quantity, # IT SHOULD NOT BE ADDED TO CART AS WE DONT HAVE ACCESS TO SELLER WEBSITE WE ONLY AHVE LINK
+                product_id = products_id,
+                google_shopping_url = google_shopping_url,
+                product_name = product_name,
+                product_image = product_image,
+                price = price,
+                seller_link = seller_link,
+                seller_name = seller_name
+                )
 
-            # Update review URLs for 1, 3, 4, and 5 stars
-            if 'reviews' in data['results'][0]['content'] and 'reviews_by_stars' in data['results'][0]['content']['reviews']:
-                for rating in ['1', '3', '4', '5']:
-                    reviews_data = data['results'][0]['content']['reviews']['reviews_by_stars'].get(rating)
-                    if reviews_data:
-                        review_url = reviews_data.get('url')
-                        if review_url and review_url.startswith('/'):
-                            reviews_data['url'] = url_prefix + review_url
-
-            # pprint(data)
-            response_data = data['results'][0]['content']
-            # response_data = data
-        except Exception as e:
-                return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        print("Product data fetched Succesfully")
-
-        try:
-            quantity = request.data.get("quantity",1)
-            # product_id = products_id
-            google_shopping_url = response_data['url']
-            product_name = response_data['title']
-            product_image = response_data['images']['full_size'][0]
-            price = response_data['pricing']['online'][0]['price']
-            seller_link = response_data['pricing']['online'][0]['seller_link']
-            # seller_logo = data['url']
-            seller_name = response_data['pricing']['online'][0]['seller']
-        except Exception as e:
-            return Response({"Message":f"Error Occured: {str(e)}"})
-        
-        print("Product details fetched Succesfully")
-
-        print(type(user),user)
-        print(type(quantity),quantity)
-        print(type(products_id),products_id)
-        print(type(google_shopping_url),google_shopping_url)
-        print(type(product_name),product_name)
-        print(type(product_image),product_image)
-        print(type(price),price)
-        print(type(seller_link),seller_link)
-        print(type(seller_name),seller_name)
-
-        try:
-
-            cart.objects.create(
-            user= user,
-            quantity = quantity, # IT SHOULD NOT BE ADDED TO CART AS WE DONT HAVE ACCESS TO SELLER WEBSITE WE ONLY AHVE LINK
-            product_id = products_id,
-            google_shopping_url = google_shopping_url,
-            product_name = product_name,
-            product_image = product_image,
-            price = price,
-            seller_link = seller_link,
-            seller_name = seller_name
-            )
-
-            return Response({"Message":"Product added to cart"},status=status.HTTP_201_CREATED)
-        except Exception as e:
-            return Response({"Message":f"Failed to add product to cart: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
+                return Response({"Message":"Product added to cart"},status=status.HTTP_201_CREATED)
+            except Exception as e:
+                return Response({"Message":f"Failed to add product to cart: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
         
 
 class DeletefromCartView(APIView):
@@ -1797,6 +1891,67 @@ class Addtosaveforlater(APIView):
 
         url_link = request.data.get('seller_link')
 
+        def get_details2(response_data,obj):
+
+            # Product ID
+            try:
+                product_id = obj.product_id
+            except:
+                product_id = "not Available"
+            # product_image
+            try:
+                if response_data['results'][0]['content']['image'] is not None:
+                    product_image = response_data['results'][0]['content']['image']
+                else:
+                    product_image = obj.product_image
+            except:
+                product_image = obj.product_image
+            # Product Name
+            try:
+                if response_data['results'][0]['content']['title'] is not None:
+                    product_name = response_data['results'][0]['content']['title']
+                else:
+                    product_name = obj.title
+            except:
+                product_name = obj.title
+            # Product Price
+            try:
+                if response_data['results'][0]['content']['price'] is not None:
+                    product_price = response_data['results'][0]['content']['price']
+                else:
+                    product_price = obj.price
+            except:
+                product_price = obj.price
+            # seller Link
+            try:
+                if response_data['results'][0]['content']['url'] is not None:
+                    seller_link = response_data['results'][0]['content']['url']
+                else:
+                    seller_link = obj.seller_link
+            except:
+                seller_link = obj.seller_link
+            # seller Name
+            try:
+                if response_data['results'][0]['content']['brand'] is not None:
+                    seller_name = response_data['results'][0]['content']['brand']
+                else:
+                    seller_name = obj.seller_name
+            except:
+                seller_name = obj.seller_name
+            # Google Shooping Link
+            try:
+                google_shopping_link = response_data['results'][0]['content']['url']
+            except:
+                google_shopping_link = "not Available"
+            try:
+                description = response_data['results'][0]['content']['description']
+            except:
+                description = "not Available"
+            try:
+                parse_status_code = response_data['results'][0]['content']['parse_status_code']
+            except:
+                parse_status_code ="not Available"
+            return product_id, product_image, product_name, product_price, seller_link, seller_name, google_shopping_link
 #==================================================== Add to cart Via Seller Link ==============================================
         def get_url_data(url):
             try:
@@ -1997,107 +2152,143 @@ class Addtosaveforlater(APIView):
                 return Response({"Message":f"Failed to move product to Saved For Later: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
             
         else: # Means Product Id is provide and not cart id
+            if str(products_id).startswith("NA_"):
+                try:
+                    obj = prodid_mapping.objects.filter(product_id=products_id).first()
+                    try:
+                        print("i am here")
+                        res = get_url_data(obj.seller_link)
+                        print("i was here")
+                        print(res)
+                    except:
+                        print("Not able to get data from Url link")
+                        res = {}
+                    product_id, product_image, product_name, product_price, seller_link, seller_name, google_shopping_link = get_details2(res,obj)
+                    
+                    try:
 
-            # if not products_id or not request.data.get('product_id'):
-            #     return Response({"Message":"Product not Found!!!"},status=status.HTTP_400_BAD_REQUEST)
+                        saveforlater.objects.create(
+                        user= user,
+                        # quantity = quantity, # IT SHOULD NOT BE ADDED TO CART AS WE DONT HAVE ACCESS TO SELLER WEBSITE WE ONLY AHVE LINK
+                        product_id = product_id,
+                        google_shopping_url = google_shopping_link,
+                        product_name = product_name,
+                        product_image = product_image,
+                        price = product_price,
+                        seller_link = seller_link,
+                        seller_name = seller_name
+                        )
 
-            try:
-                oxy_account = oxylab_account.objects.get(id=1)
-                username = oxy_account.username
-                password = oxy_account.password
-            except oxylab_account.DoesNotExist:
-                return Response({'Message': 'Error in oxylabs credential '}, status=status.HTTP_400_BAD_REQUEST)
+                        return Response({"Message":"Product added to Save Later"},status=status.HTTP_201_CREATED)
+                    except Exception as e:
+                        return Response({"Message":f"Failed to add product to Save Later: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
+
+                except Exception as e:
+                    logger.error(f'Unable to fetch the Product detail: {str(e)}')
+                    return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_404_NOT_FOUND)
 
 
-            payload = {
-                'source': 'google_shopping_product',
-                'domain': 'co.in',
-                'query': products_id, # Product ID
-                'parse': True,
-                'locale': 'en'
-            }
+            else:
+                # if not products_id or not request.data.get('product_id'):
+                #     return Response({"Message":"Product not Found!!!"},status=status.HTTP_400_BAD_REQUEST)
 
-            try:
+                try:
+                    oxy_account = oxylab_account.objects.get(id=1)
+                    username = oxy_account.username
+                    password = oxy_account.password
+                except oxylab_account.DoesNotExist:
+                    return Response({'Message': 'Error in oxylabs credential '}, status=status.HTTP_400_BAD_REQUEST)
 
-                # Get response.
-                response = requests.request(
-                    'POST',
-                    'https://realtime.oxylabs.io/v1/queries',
-                    auth=(username, password),
-                    json=payload,
-                )
+
+                payload = {
+                    'source': 'google_shopping_product',
+                    'domain': 'co.in',
+                    'query': products_id, # Product ID
+                    'parse': True,
+                    'locale': 'en'
+                }
+
+                try:
+
+                    # Get response.
+                    response = requests.request(
+                        'POST',
+                        'https://realtime.oxylabs.io/v1/queries',
+                        auth=(username, password),
+                        json=payload,
+                    )
+                    
+                    data =response.json()#['results'][0]['content']
+
+                    # print(data)
+
+                    def get_final_url(original_url):
+                        response = requests.get(original_url, allow_redirects=True,timeout=5)
+                        return response.url
+
+                    # URL prefix to prepend
+                    url_prefix = 'https://www.google.com'
+
+                    # Update seller links
+                    if 'pricing' in data['results'][0]['content'] and 'online' in data['results'][0]['content']['pricing']:
+                        for seller_info in data['results'][0]['content']['pricing']['online']:
+                            seller_link = seller_info.get('seller_link')
+                            if seller_link and seller_link.startswith('/'):
+                                link_seller = url_prefix + seller_link
+                                seller_info['seller_link'] = get_final_url(link_seller)
+                                # seller_info['seller_link'] = str(seller_link).replace("/url?q=",'')#url_prefix + seller_link
+
+                    # Update review URLs for 1, 3, 4, and 5 stars
+                    if 'reviews' in data['results'][0]['content'] and 'reviews_by_stars' in data['results'][0]['content']['reviews']:
+                        for rating in ['1', '3', '4', '5']:
+                            reviews_data = data['results'][0]['content']['reviews']['reviews_by_stars'].get(rating)
+                            if reviews_data:
+                                review_url = reviews_data.get('url')
+                                if review_url and review_url.startswith('/'):
+                                    reviews_data['url'] = url_prefix + review_url
+
+                    # pprint(data)
+                    response_data = data['results'][0]['content']
+                    # response_data = data
+                except Exception as e:
+                        return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+                print("Product data fetched Succesfully")
+
+                try:
+                    quantity = request.data.get("quantity",1)
+                    # product_id = products_id
+                    google_shopping_url = response_data['url']
+                    product_name = response_data['title']
+                    product_image = response_data['images']['full_size'][0]
+                    price = response_data['pricing']['online'][0]['price']
+                    seller_link = response_data['pricing']['online'][0]['seller_link']
+                    # seller_logo = data['url']
+                    seller_name = response_data['pricing']['online'][0]['seller']
+                except Exception as e:
+                    return Response({"Message":f"Error Occured: {str(e)}"})
                 
-                data =response.json()#['results'][0]['content']
+                print("Product details fetched Succesfully")
 
-                # print(data)
+                try:
 
-                def get_final_url(original_url):
-                    response = requests.get(original_url, allow_redirects=True)
-                    return response.url
+                    saveforlater.objects.create(
+                    user= user,
+                    quantity = quantity, # IT SHOULD NOT BE ADDED TO CART AS WE DONT HAVE ACCESS TO SELLER WEBSITE WE ONLY AHVE LINK
+                    product_id = products_id,
+                    google_shopping_url = google_shopping_url,
+                    product_name = product_name,
+                    product_image = product_image,
+                    price = price,
+                    seller_link = seller_link,
+                    seller_name = seller_name
+                    )
+                    return Response({"Message": "Product has been Saved For Later"}, status=status.HTTP_204_NO_CONTENT)
 
-                # URL prefix to prepend
-                url_prefix = 'https://www.google.com'
-
-                # Update seller links
-                if 'pricing' in data['results'][0]['content'] and 'online' in data['results'][0]['content']['pricing']:
-                    for seller_info in data['results'][0]['content']['pricing']['online']:
-                        seller_link = seller_info.get('seller_link')
-                        if seller_link and seller_link.startswith('/'):
-                            link_seller = url_prefix + seller_link
-                            seller_info['seller_link'] = get_final_url(link_seller)
-                            # seller_info['seller_link'] = str(seller_link).replace("/url?q=",'')#url_prefix + seller_link
-
-                # Update review URLs for 1, 3, 4, and 5 stars
-                if 'reviews' in data['results'][0]['content'] and 'reviews_by_stars' in data['results'][0]['content']['reviews']:
-                    for rating in ['1', '3', '4', '5']:
-                        reviews_data = data['results'][0]['content']['reviews']['reviews_by_stars'].get(rating)
-                        if reviews_data:
-                            review_url = reviews_data.get('url')
-                            if review_url and review_url.startswith('/'):
-                                reviews_data['url'] = url_prefix + review_url
-
-                # pprint(data)
-                response_data = data['results'][0]['content']
-                # response_data = data
-            except Exception as e:
-                    return Response({'Message': f'Unable to fetch the Product detail: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-            print("Product data fetched Succesfully")
-
-            try:
-                quantity = request.data.get("quantity",1)
-                # product_id = products_id
-                google_shopping_url = response_data['url']
-                product_name = response_data['title']
-                product_image = response_data['images']['full_size'][0]
-                price = response_data['pricing']['online'][0]['price']
-                seller_link = response_data['pricing']['online'][0]['seller_link']
-                # seller_logo = data['url']
-                seller_name = response_data['pricing']['online'][0]['seller']
-            except Exception as e:
-                return Response({"Message":f"Error Occured: {str(e)}"})
-            
-            print("Product details fetched Succesfully")
-
-            try:
-
-                saveforlater.objects.create(
-                user= user,
-                quantity = quantity, # IT SHOULD NOT BE ADDED TO CART AS WE DONT HAVE ACCESS TO SELLER WEBSITE WE ONLY AHVE LINK
-                product_id = products_id,
-                google_shopping_url = google_shopping_url,
-                product_name = product_name,
-                product_image = product_image,
-                price = price,
-                seller_link = seller_link,
-                seller_name = seller_name
-                )
-                return Response({"Message": "Product has been Saved For Later"}, status=status.HTTP_204_NO_CONTENT)
-
-            except ObjectDoesNotExist:
-                return Response({"Message": "Cart item not found"}, status=status.HTTP_404_NOT_FOUND)
-            except Exception as e:
-                return Response({"Message":f"Failed to move product to Saved For Later: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
+                except ObjectDoesNotExist:
+                    return Response({"Message": "Cart item not found"}, status=status.HTTP_404_NOT_FOUND)
+                except Exception as e:
+                    return Response({"Message":f"Failed to move product to Saved For Later: {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -2583,7 +2774,7 @@ class OxylabPageONSale(APIView):
             context.append({'key': 'tbs', 'value': f"tbm=shop&q={query_main}&tbs=mr:1,sales:1"})
 
         def get_final_url(original_url):
-            response = requests.get(original_url, allow_redirects=True)
+            response = requests.get(original_url, allow_redirects=True,timeout=5)
             return response.url
             
         def fetch_page(page_number):
@@ -2737,7 +2928,7 @@ class OxylabPageSearchView(APIView):
             context.append({'key': 'tbs', 'value': f"tbm=shop&q={query_main}&tbs=mr:1,{filter_all}"})
 
         def get_final_url(original_url):
-            response = requests.get(original_url, allow_redirects=True)
+            response = requests.get(original_url, allow_redirects=True,timeout=5)
             return response.url
             
         def fetch_page(page_number):
@@ -2849,7 +3040,8 @@ class OxylabPageSearchView(APIView):
 
                     try:
                         if 'product_id' not in item or not item['product_id']:
-                            seller_link = item['merchant']['url']
+                            new_url = get_final_url(item['merchant']['url'])
+                            seller_link = new_url
                             
                             # Check if seller_link exists in prodid_mapping
                             existing_entry = prodid_mapping.objects.filter(seller_link=seller_link).first()
@@ -3263,7 +3455,7 @@ class OxylabCategoryPageView(APIView):
             context.append({'key': 'tbs', 'value': f"tbm=shop&q={query_main}&tbs=mr:1,{filter_all}"})
 
         def get_final_url(original_url):
-            response = requests.get(original_url, allow_redirects=True)
+            response = requests.get(original_url, allow_redirects=True,timeout=5)
             return response.url
             
         def fetch_page(page_number):
@@ -3375,7 +3567,8 @@ class OxylabCategoryPageView(APIView):
 
                     try:
                         if 'product_id' not in item or not item['product_id']:
-                            seller_link = item['merchant']['url']
+                            new_url = get_final_url(item['merchant']['url'])
+                            seller_link = new_url
                             
                             # Check if seller_link exists in prodid_mapping
                             existing_entry = prodid_mapping.objects.filter(seller_link=seller_link).first()
@@ -3952,7 +4145,7 @@ class CategoryPageWithProductIDFilter(APIView):
             context.append({'key': 'tbs', 'value': f"tbm=shop&q={query_main}&tbs=mr:1,{filter_all}"})
 
         def get_final_url(original_url):
-            response = requests.get(original_url, allow_redirects=True)
+            response = requests.get(original_url, allow_redirects=True,timeout=5)
             return response.url
             
         def fetch_page(page_number):
