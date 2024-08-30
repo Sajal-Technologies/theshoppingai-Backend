@@ -1139,27 +1139,42 @@ class OxylabProductDetailView(APIView):
                 product_id = "not Available"
             # product_image
             try:
-                product_image = response_data['results'][0]['content']['image']
+                if response_data['results'][0]['content']['image'] is not None:
+                    product_image = response_data['results'][0]['content']['image']
+                else:
+                    product_image = obj.product_image
             except:
                 product_image = obj.product_image
             # Product Name
             try:
-                product_name = response_data['results'][0]['content']['title']
+                if response_data['results'][0]['content']['title'] is not None:
+                    product_name = response_data['results'][0]['content']['title']
+                else:
+                    product_name = obj.title
             except:
                 product_name = obj.title
             # Product Price
             try:
-                product_price = response_data['results'][0]['content']['price']
+                if response_data['results'][0]['content']['price'] is not None:
+                    product_price = response_data['results'][0]['content']['price']
+                else:
+                    product_price = obj.price
             except:
                 product_price = obj.price
             # seller Link
             try:
-                seller_link = response_data['results'][0]['content']['url']
+                if response_data['results'][0]['content']['url'] is not None:
+                    seller_link = response_data['results'][0]['content']['url']
+                else:
+                    seller_link = obj.seller_link
             except:
                 seller_link = obj.seller_link
             # seller Name
             try:
-                seller_name = response_data['results'][0]['content']['brand']
+                if response_data['results'][0]['content']['brand'] is not None:
+                    seller_name = response_data['results'][0]['content']['brand']
+                else:
+                    seller_name = obj.seller_name
             except:
                 seller_name = obj.seller_name
             # Google Shooping Link
@@ -2832,21 +2847,6 @@ class OxylabPageSearchView(APIView):
                     except Exception as e:
                         logger.error(f"Error parsing URL for item: {e}")
 
-                    # try:
-                    #     if 'product_id' not in item or not item['product_id']:
-                    #         item['product_id'] = generate_unique_product_id()
-                    #         prodid_mapping.objects.create(
-                    #             product_id=item['product_id'],
-                    #             seller_link=item['merchant']['url'],
-                    #             price=item['price'],
-                    #             seller_name=item['merchant']['name'],
-                    #             title=item['title'],
-                    #             delivery=item['delivery'],
-                    #         )
-                    # except Exception as e:
-                    #     logger.error(f"Error getting product_id for item: {e}")
-
-
                     try:
                         if 'product_id' not in item or not item['product_id']:
                             seller_link = item['merchant']['url']
@@ -3290,20 +3290,77 @@ class OxylabCategoryPageView(APIView):
             except requests.RequestException as e:
                 logger.error(f"Error fetching page {page_number}: {e}")
                 return []
-
+            
         try:
             # Fetch data for the specified page
             results = fetch_page(page_number)
+            
+            def generate_unique_product_id():
+                # Generate a UUID and take the integer representation
+                unique_id = uuid.uuid4().int
+                
+                # Convert the integer to a string and take the first 20 digits
+                product_id = "NA_" + str(unique_id)[:30]
+                
+                return product_id
 
             shopping_data = []
             search_history_entries = []
             last_page_number = []
             current_page_number = []
+            passed = []
+            url_list = [
+                "amazon", "flipkart", "snapdeal", "myntra", "ajio", "paytmmall", "tatacliq", "shopclues",
+                "pepperfry", "nykaa", "limeroad", "faballey", "zivame", "koovs", "clovia", "biba", 
+                "wforwoman", "bewakoof", "urbanladder", "croma", "reliancedigital", "vijaysales", 
+                "gadgets360", "poorvikamobile", "samsung", "oneplus", "mi", "dell", "apple", "bigbasket", 
+                "blinkit", "jiomart", "dunzo", "spencers", "naturesbasket", "zopnow", "starquik", "fabindia", 
+                "hometown", "woodenstreet", "thedecorkart", "chumbak", "livspace", "thesleepcompany", "firstcry", 
+                "healthkart", "netmeds", "1mg", "lenskart", "tanishq", "bluestone", "caratlane", "purplle", 
+                "crossword", "sapnaonline", "booksadda", "bookchor", "a1books", "scholastic", "headsupfortails", 
+                "petsworld", "dogspot", "petshop18", "pawsindia", "marshallspetzone", "petsglam", "petsy", 
+                "petnest", "justdogsstore", "infibeam", "shoppersstop", "craftsvilla", "naaptol", "saholic", 
+                "homeshop18", "futurebazaar", "ritukumar", "thelabellife", "andindia", "globaldesi", "sutastore", 
+                "nykaafashion", "jaypore", "amantelingerie", "happimobiles", "electronicscomp", "jio", 
+                "unboxindia", "gadgetbridge", "vlebazaar", "dmart", "supermart", "moreretail", "easyday", 
+                "reliancefresh", "houseofpataudi", "ikea", "zarahome", "indigoliving", "goodearth", "westside", 
+                "godrejinterio", "fabfurnish", "limeroad", "pcjeweller", "kalyanjewellers", "candere", "voylla", 
+                "orra", "sencogoldanddiamonds", "bookishsanta", "pustakmandi", "wordery", "starmark", 
+                "bargainbooks", "bookdepository", "worldofbooks", "bookswagon", "kitabay", "pupkart", 
+                "whiskas", "barksandmeows", "petophilia", "waggle", "themancompany", "beardo", "mamaearth", 
+                "plumgoodness", "buywow", "ustraa", "myglamm", "bombayshavingcompany", "khadinatural", 
+                "zomato", "swiggy", "freshmenu", "box8", "faasos", "dineout", "rebelfoods", "behrouzbiryani", 
+                "dominos", "pizzahut", "makemytrip", "goibibo", "yatra", "cleartrip", "oyorooms", "airbnb", 
+                "trivago", "booking", "agoda", "expedia", "urbanclap", "housejoy", "jeeves", "onsitego", 
+                "homecentre", "rentomojo", "furlenco", "nestaway", "tata"
+            ]
+            
+            # Remove duplicates and convert to lowercase
+            url_list = list(set([url.lower() for url in url_list]))
+
+            # Function to normalize the merchant name
+            def normalize_name(name):
+                # Remove domain extensions and symbols
+                name = re.sub(r'\.(com|in|org|net|co)\b', '', name, flags=re.IGNORECASE)
+                return name.lower()
+
+            # Normalize and filter merchants in shopping_data before processing
             for result in results:
                 organic_results = result.get('content', {}).get('results', {}).get('organic', [])
                 last_page_number.append(result.get('content', {})['last_visible_page'])
                 current_page_number.append(result.get('content', {})['page'])
+
                 for item in organic_results:
+                    merchant_name = item.get('merchant', {}).get('name', '')
+                    normalized_name = normalize_name(merchant_name)
+                    
+                    # Filter based on normalized merchant name
+                    if normalized_name in url_list:
+                        passed.append(item)
+                    else:
+                        print(f"Merchant name '{merchant_name}' not found in URL list.")
+                        continue  # Skip the item if merchant name is not in the list
+
                     try:
                         if 'url' in item:
                             item['url'] = "https://www.google.com" + item['url']
@@ -3315,6 +3372,33 @@ class OxylabCategoryPageView(APIView):
                             item['merchant']['url'] = self.fix_url(item['merchant']['url'])
                     except Exception as e:
                         logger.error(f"Error parsing URL for item: {e}")
+
+                    try:
+                        if 'product_id' not in item or not item['product_id']:
+                            seller_link = item['merchant']['url']
+                            
+                            # Check if seller_link exists in prodid_mapping
+                            existing_entry = prodid_mapping.objects.filter(seller_link=seller_link).first()
+                            
+                            if existing_entry:
+                                # If entry exists, use the existing product_id
+                                item['product_id'] = existing_entry.product_id
+                            else:
+                                # If entry does not exist, generate a new product_id and create a new entry
+                                item['product_id'] = generate_unique_product_id()
+                                prodid_mapping.objects.create(
+                                    product_id=item['product_id'],
+                                    seller_link=seller_link,
+                                    price=item['price'],
+                                    seller_name=item['merchant']['name'],
+                                    title=item['title'],
+                                    delivery=item['delivery'],
+                                    product_image=item['thumbnail'],
+                                )
+                        
+                    except Exception as e:
+                        logger.error(f"Error getting product_id for item: {e}")
+                    
 
                     shopping_data.append(item)
 
@@ -3350,47 +3434,113 @@ class OxylabCategoryPageView(APIView):
 
             logger.info(f"Total products fetched: {len(shopping_data)}")
 
-            try:
-                passed= []
-                url_list = ["amazon", "flipkart", "snapdeal", "myntra", "ajio", "paytmmall", "tatacliq", "shopclues", "myntra", "pepperfry", "nykaa", "limeroad", "faballey", "zivame", "koovs", "clovia", "biba", "wforwoman", "bewakoof", "urbanladder", "croma", "reliancedigital", "vijaysales", "gadgets360", "poorvikamobile", "samsung", "oneplus", "mi", "dell", "apple", "bigbasket", "blinkit", "amazon", "jiomart", "dunzo", "spencers", "naturesbasket", "zopnow", "shop", "starquik", "urbanladder", "pepperfry", "fabindia", "hometown", "woodenstreet", "thedecorkart", "chumbak", "hometown", "livspace", "thesleepcompany", "firstcry", "healthkart", "netmeds", "1mg", "lenskart", "tanishq", "bluestone", "caratlane", "zivame", "purplle", "amazon", "flipkart", "in", "crossword", "sapnaonline", "booksadda", "bookchor", "amazon", "a1books", "scholastic", "headsupfortails", "petsworld", "dogspot", "petshop18", "pawsindia", "marshallspetzone", "petsglam", "petsy", "petnest", "justdogsstore", "infibeam", "shoppersstop", "shopping", "craftsvilla", "naaptol", "shopping", "saholic", "flipkart", "homeshop18", "futurebazaar", "ritukumar", "shoppersstop", "thelabellife", "andindia", "globaldesi", "sutastore", "nykaafashion", "jaypore", "amantelingerie", "myntra", "happimobiles", "electronicscomp", "jio", "unboxindia", "samsung", "gadgetbridge", "store", "poorvikamobile", "happimobiles", "vlebazaar", "dmart", "amazon", "naturesbasket", "supermart", "naturesbasket", "spencers", "bigbasket", "moreretail", "easyday", "reliancefresh", "houseofpataudi", "urbanladder", "ikea", "zarahome", "indigoliving", "goodearth", "westside", "godrejinterio", "fabfurnish", "pepperfry", "limeroad", "tanishq", "pcjeweller", "kalyanjewellers", "candere", "caratlane", "bluestone", "voylla", "orra", "sencogoldanddiamonds", "bookishsanta", "pustakmandi", "wordery", "starmark", "bargainbooks", "bookdepository", "worldofbooks", "crossword", "bookswagon", "kitabay", "pupkart", "whiskas", "petshop", "petsy", "headsupfortails", "petsworld", "justdogs", "barksandmeows", "petophilia", "waggle", "themancompany", "beardo", "mamaearth", "in", "plumgoodness", "buywow", "ustraa", "myglamm", "bombayshavingcompany", "khadinatural", "zomato", "swiggy", "freshmenu", "box8", "faasos", "dineout", "rebelfoods", "behrouzbiryani", "dominos", "pizzahut", "makemytrip", "goibibo", "yatra", "cleartrip", "oyorooms", "airbnb", "trivago", "booking", "agoda", "expedia", "urbanclap", "housejoy", "jeeves", "onsitego", "urbanladder", "pepperfry", "homecentre", "rentomojo", "furlenco", "nestaway", "tata"]
-                
-                # Remove duplicates from the URL list
-                url_list = list(set(url_list))
-
-
-                # Convert URL list to lowercase for case-insensitive comparison
-                url_list = [url.lower() for url in url_list]
-
-                # Function to normalize the merchant name
-                def normalize_name(name):
-                    # Remove domain extensions and symbols
-                    name = re.sub(r'\.(com|in|org|net|co)\b', '', name, flags=re.IGNORECASE)
-                    # name = re.sub(r'\W+', '', name)  # Remove all non-alphanumeric characters
-                    return name.lower()
-
-                passed = []
-
-                # try:
-                for i in shopping_data:
-                    merchant_name = i.get('merchant', {}).get('name', '')
-                    
-                    # Normalize the merchant name
-                    normalized_name = normalize_name(merchant_name)
-                    
-                    # Check if the normalized merchant name is in the URL list
-                    if normalized_name in url_list:
-                        passed.append(i)
-                    else:
-                        print(f"Merchant name '{merchant_name}' not found in URL list.")
-                
-                print({"Message":"Filter out result on 200 website Successful","data":passed})
-            except Exception as e:
-                print({'Message': f'Unable to filter result: {str(e)}'})
-            
-            return Response({'Message': 'Fetched the Product data Successfully', "Product_data": passed, "Last Page": last_page_number, "Current Page":current_page_number}, status=status.HTTP_200_OK)
+            return Response({'Message': 'Fetched the Product data Successfully', "Product_data": passed, "Last Page": last_page_number, "Current Page": current_page_number}, status=status.HTTP_200_OK)
 
         except Exception as e:
-            return Response({'Message': f'Failed to Fetch the Product data : {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'Message': f'Failed to Fetch the Product data: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+        # try:
+        #     # Fetch data for the specified page
+        #     results = fetch_page(page_number)
+
+        #     shopping_data = []
+        #     search_history_entries = []
+        #     last_page_number = []
+        #     current_page_number = []
+        #     for result in results:
+        #         organic_results = result.get('content', {}).get('results', {}).get('organic', [])
+        #         last_page_number.append(result.get('content', {})['last_visible_page'])
+        #         current_page_number.append(result.get('content', {})['page'])
+        #         for item in organic_results:
+        #             try:
+        #                 if 'url' in item:
+        #                     item['url'] = "https://www.google.com" + item['url']
+        #             except Exception as e:
+        #                 logger.error(f"Error parsing URL for item: {e}")
+
+        #             try:
+        #                 if 'merchant' in item and 'url' in item['merchant']:
+        #                     item['merchant']['url'] = self.fix_url(item['merchant']['url'])
+        #             except Exception as e:
+        #                 logger.error(f"Error parsing URL for item: {e}")
+
+        #             shopping_data.append(item)
+
+        #             product_id = item.get('product_id')
+        #             if product_id is None or product_id == "":
+        #                 logger.error(f"Invalid product_id: {product_id}")
+        #                 continue
+
+        #             search_history_entries.append(
+        #                 search_history(
+        #                     query=query,
+        #                     product_id=product_id,
+        #                     google_url=item['url'],
+        #                     seller_name=item['merchant']['name'],
+        #                     seller_url=item['merchant']['url'],
+        #                     price=item['price'],
+        #                     product_title=item['title'],
+        #                     delivery=item['delivery'],
+        #                     currency=item['currency'],
+        #                     rating=item.get('rating'),
+        #                     reviews_count=item.get('reviews_count'),
+        #                     product_pic=item.get('thumbnail')
+        #                 )
+        #             )
+
+        #     logger.info(f"Total search_history entries to create: {len(search_history_entries)}")
+
+        #     with transaction.atomic():
+        #         try:
+        #             search_history.objects.bulk_create(search_history_entries, ignore_conflicts=True)
+        #         except Exception as e:
+        #             logger.error(f"Error creating search_history entries: {e}")
+
+        #     logger.info(f"Total products fetched: {len(shopping_data)}")
+
+        #     try:
+        #         passed= []
+        #         url_list = ["amazon", "flipkart", "snapdeal", "myntra", "ajio", "paytmmall", "tatacliq", "shopclues", "myntra", "pepperfry", "nykaa", "limeroad", "faballey", "zivame", "koovs", "clovia", "biba", "wforwoman", "bewakoof", "urbanladder", "croma", "reliancedigital", "vijaysales", "gadgets360", "poorvikamobile", "samsung", "oneplus", "mi", "dell", "apple", "bigbasket", "blinkit", "amazon", "jiomart", "dunzo", "spencers", "naturesbasket", "zopnow", "shop", "starquik", "urbanladder", "pepperfry", "fabindia", "hometown", "woodenstreet", "thedecorkart", "chumbak", "hometown", "livspace", "thesleepcompany", "firstcry", "healthkart", "netmeds", "1mg", "lenskart", "tanishq", "bluestone", "caratlane", "zivame", "purplle", "amazon", "flipkart", "in", "crossword", "sapnaonline", "booksadda", "bookchor", "amazon", "a1books", "scholastic", "headsupfortails", "petsworld", "dogspot", "petshop18", "pawsindia", "marshallspetzone", "petsglam", "petsy", "petnest", "justdogsstore", "infibeam", "shoppersstop", "shopping", "craftsvilla", "naaptol", "shopping", "saholic", "flipkart", "homeshop18", "futurebazaar", "ritukumar", "shoppersstop", "thelabellife", "andindia", "globaldesi", "sutastore", "nykaafashion", "jaypore", "amantelingerie", "myntra", "happimobiles", "electronicscomp", "jio", "unboxindia", "samsung", "gadgetbridge", "store", "poorvikamobile", "happimobiles", "vlebazaar", "dmart", "amazon", "naturesbasket", "supermart", "naturesbasket", "spencers", "bigbasket", "moreretail", "easyday", "reliancefresh", "houseofpataudi", "urbanladder", "ikea", "zarahome", "indigoliving", "goodearth", "westside", "godrejinterio", "fabfurnish", "pepperfry", "limeroad", "tanishq", "pcjeweller", "kalyanjewellers", "candere", "caratlane", "bluestone", "voylla", "orra", "sencogoldanddiamonds", "bookishsanta", "pustakmandi", "wordery", "starmark", "bargainbooks", "bookdepository", "worldofbooks", "crossword", "bookswagon", "kitabay", "pupkart", "whiskas", "petshop", "petsy", "headsupfortails", "petsworld", "justdogs", "barksandmeows", "petophilia", "waggle", "themancompany", "beardo", "mamaearth", "in", "plumgoodness", "buywow", "ustraa", "myglamm", "bombayshavingcompany", "khadinatural", "zomato", "swiggy", "freshmenu", "box8", "faasos", "dineout", "rebelfoods", "behrouzbiryani", "dominos", "pizzahut", "makemytrip", "goibibo", "yatra", "cleartrip", "oyorooms", "airbnb", "trivago", "booking", "agoda", "expedia", "urbanclap", "housejoy", "jeeves", "onsitego", "urbanladder", "pepperfry", "homecentre", "rentomojo", "furlenco", "nestaway", "tata"]
+                
+        #         # Remove duplicates from the URL list
+        #         url_list = list(set(url_list))
+
+
+        #         # Convert URL list to lowercase for case-insensitive comparison
+        #         url_list = [url.lower() for url in url_list]
+
+        #         # Function to normalize the merchant name
+        #         def normalize_name(name):
+        #             # Remove domain extensions and symbols
+        #             name = re.sub(r'\.(com|in|org|net|co)\b', '', name, flags=re.IGNORECASE)
+        #             # name = re.sub(r'\W+', '', name)  # Remove all non-alphanumeric characters
+        #             return name.lower()
+
+        #         passed = []
+
+        #         # try:
+        #         for i in shopping_data:
+        #             merchant_name = i.get('merchant', {}).get('name', '')
+                    
+        #             # Normalize the merchant name
+        #             normalized_name = normalize_name(merchant_name)
+                    
+        #             # Check if the normalized merchant name is in the URL list
+        #             if normalized_name in url_list:
+        #                 passed.append(i)
+        #             else:
+        #                 print(f"Merchant name '{merchant_name}' not found in URL list.")
+                
+        #         print({"Message":"Filter out result on 200 website Successful","data":passed})
+        #     except Exception as e:
+        #         print({'Message': f'Unable to filter result: {str(e)}'})
+            
+        #     return Response({'Message': 'Fetched the Product data Successfully', "Product_data": passed, "Last Page": last_page_number, "Current Page":current_page_number}, status=status.HTTP_200_OK)
+
+        # except Exception as e:
+        #     return Response({'Message': f'Failed to Fetch the Product data : {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
 
     @staticmethod
     def fix_url(encoded_url):
