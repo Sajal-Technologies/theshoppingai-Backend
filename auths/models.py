@@ -165,6 +165,7 @@ class prodid_mapping(TimeStampModel):
     seller_name = models.CharField(max_length=250,null=True, blank=True)
     title = models.TextField(null=True,blank=True)
     delivery = models.CharField(max_length=250,null=True,blank=True)
+    product_image = models.URLField(null=True,blank=True)
 
     
 #-----------------------------------------------------Code BY Adil-------------------------------------------------------------
