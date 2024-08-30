@@ -2801,21 +2801,77 @@ class OxylabPageONSale(APIView):
             except requests.RequestException as e:
                 logger.error(f"Error fetching page {page_number}: {e}")
                 return []
-
+            
         try:
-
             # Fetch data for the specified page
             results = fetch_page(page_number)
+            
+            def generate_unique_product_id():
+                # Generate a UUID and take the integer representation
+                unique_id = uuid.uuid4().int
+                
+                # Convert the integer to a string and take the first 20 digits
+                product_id = "NA_" + str(unique_id)[:30]
+                
+                return product_id
 
             shopping_data = []
             search_history_entries = []
             last_page_number = []
             current_page_number = []
+            passed = []
+            url_list = [
+                "amazon", "flipkart", "snapdeal", "myntra", "ajio", "paytmmall", "tatacliq", "shopclues",
+                "pepperfry", "nykaa", "limeroad", "faballey", "zivame", "koovs", "clovia", "biba", 
+                "wforwoman", "bewakoof", "urbanladder", "croma", "reliancedigital", "vijaysales", 
+                "gadgets360", "poorvikamobile", "samsung", "oneplus", "mi", "dell", "apple", "bigbasket", 
+                "blinkit", "jiomart", "dunzo", "spencers", "naturesbasket", "zopnow", "starquik", "fabindia", 
+                "hometown", "woodenstreet", "thedecorkart", "chumbak", "livspace", "thesleepcompany", "firstcry", 
+                "healthkart", "netmeds", "1mg", "lenskart", "tanishq", "bluestone", "caratlane", "purplle", 
+                "crossword", "sapnaonline", "booksadda", "bookchor", "a1books", "scholastic", "headsupfortails", 
+                "petsworld", "dogspot", "petshop18", "pawsindia", "marshallspetzone", "petsglam", "petsy", 
+                "petnest", "justdogsstore", "infibeam", "shoppersstop", "craftsvilla", "naaptol", "saholic", 
+                "homeshop18", "futurebazaar", "ritukumar", "thelabellife", "andindia", "globaldesi", "sutastore", 
+                "nykaafashion", "jaypore", "amantelingerie", "happimobiles", "electronicscomp", "jio", 
+                "unboxindia", "gadgetbridge", "vlebazaar", "dmart", "supermart", "moreretail", "easyday", 
+                "reliancefresh", "houseofpataudi", "ikea", "zarahome", "indigoliving", "goodearth", "westside", 
+                "godrejinterio", "fabfurnish", "limeroad", "pcjeweller", "kalyanjewellers", "candere", "voylla", 
+                "orra", "sencogoldanddiamonds", "bookishsanta", "pustakmandi", "wordery", "starmark", 
+                "bargainbooks", "bookdepository", "worldofbooks", "bookswagon", "kitabay", "pupkart", 
+                "whiskas", "barksandmeows", "petophilia", "waggle", "themancompany", "beardo", "mamaearth", 
+                "plumgoodness", "buywow", "ustraa", "myglamm", "bombayshavingcompany", "khadinatural", 
+                "zomato", "swiggy", "freshmenu", "box8", "faasos", "dineout", "rebelfoods", "behrouzbiryani", 
+                "dominos", "pizzahut", "makemytrip", "goibibo", "yatra", "cleartrip", "oyorooms", "airbnb", 
+                "trivago", "booking", "agoda", "expedia", "urbanclap", "housejoy", "jeeves", "onsitego", 
+                "homecentre", "rentomojo", "furlenco", "nestaway", "tata"
+            ]
+            
+            # Remove duplicates and convert to lowercase
+            url_list = list(set([url.lower() for url in url_list]))
+
+            # Function to normalize the merchant name
+            def normalize_name(name):
+                # Remove domain extensions and symbols
+                name = re.sub(r'\.(com|in|org|net|co)\b', '', name, flags=re.IGNORECASE)
+                return name.lower()
+
+            # Normalize and filter merchants in shopping_data before processing
             for result in results:
                 organic_results = result.get('content', {}).get('results', {}).get('organic', [])
                 last_page_number.append(result.get('content', {})['last_visible_page'])
                 current_page_number.append(result.get('content', {})['page'])
+
                 for item in organic_results:
+                    merchant_name = item.get('merchant', {}).get('name', '')
+                    normalized_name = normalize_name(merchant_name)
+                    
+                    # Filter based on normalized merchant name
+                    if normalized_name in url_list:
+                        passed.append(item)
+                    else:
+                        print(f"Merchant name '{merchant_name}' not found in URL list.")
+                        continue  # Skip the item if merchant name is not in the list
+
                     try:
                         if 'url' in item:
                             item['url'] = "https://www.google.com" + item['url']
@@ -2827,6 +2883,34 @@ class OxylabPageONSale(APIView):
                             item['merchant']['url'] = self.fix_url(item['merchant']['url'])
                     except Exception as e:
                         logger.error(f"Error parsing URL for item: {e}")
+
+                    try:
+                        if 'product_id' not in item or not item['product_id']:
+                            new_url = get_final_url(item['merchant']['url'])
+                            seller_link = new_url
+                            
+                            # Check if seller_link exists in prodid_mapping
+                            existing_entry = prodid_mapping.objects.filter(seller_link=seller_link).first()
+                            
+                            if existing_entry:
+                                # If entry exists, use the existing product_id
+                                item['product_id'] = existing_entry.product_id
+                            else:
+                                # If entry does not exist, generate a new product_id and create a new entry
+                                item['product_id'] = generate_unique_product_id()
+                                prodid_mapping.objects.create(
+                                    product_id=item['product_id'],
+                                    seller_link=seller_link,
+                                    price=item['price'],
+                                    seller_name=item['merchant']['name'],
+                                    title=item['title'],
+                                    delivery=item['delivery'],
+                                    product_image=item['thumbnail'],
+                                )
+                        
+                    except Exception as e:
+                        logger.error(f"Error getting product_id for item: {e}")
+                    
 
                     shopping_data.append(item)
 
@@ -2861,11 +2945,105 @@ class OxylabPageONSale(APIView):
                     logger.error(f"Error creating search_history entries: {e}")
 
             logger.info(f"Total products fetched: {len(shopping_data)}")
-            
-            return Response({'Message': 'Fetched the Product data Successfully', "Product_data": shopping_data, "Last Page": last_page_number, "Current Page":current_page_number}, status=status.HTTP_200_OK)
+
+            return Response({'Message': 'Fetched the Product data Successfully', "Product_data": passed, "Last Page": last_page_number, "Current Page": current_page_number}, status=status.HTTP_200_OK)
 
         except Exception as e:
-            return Response({'Message': f'Failed to Fetch the Product data : {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'Message': f'Failed to Fetch the Product data: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # def get_final_url(original_url):
+        #     response = requests.get(original_url, allow_redirects=True,timeout=5)
+        #     return response.url
+            
+        # def fetch_page(page_number):
+        #     payload = {
+        #         'source': 'google_shopping_search',
+        #         'domain': 'co.in',
+        #         'query': query_main,
+        #         "start_page": page_number,
+        #         'pages': 1,
+        #         'parse': True,
+        #         'locale': 'en',
+        #         "geo_location": "India",
+        #         'context': context,
+        #     }
+        #     try:
+        #         response = requests.post(
+        #             'https://realtime.oxylabs.io/v1/queries',
+        #             auth=(username, password),
+        #             json=payload,
+        #         )
+        #         response.raise_for_status()
+        #         data = response.json()
+        #         return data.get('results', [])
+        #     except requests.RequestException as e:
+        #         logger.error(f"Error fetching page {page_number}: {e}")
+        #         return []
+
+        # try:
+
+        #     # Fetch data for the specified page
+        #     results = fetch_page(page_number)
+
+        #     shopping_data = []
+        #     search_history_entries = []
+        #     last_page_number = []
+        #     current_page_number = []
+        #     for result in results:
+        #         organic_results = result.get('content', {}).get('results', {}).get('organic', [])
+        #         last_page_number.append(result.get('content', {})['last_visible_page'])
+        #         current_page_number.append(result.get('content', {})['page'])
+        #         for item in organic_results:
+        #             try:
+        #                 if 'url' in item:
+        #                     item['url'] = "https://www.google.com" + item['url']
+        #             except Exception as e:
+        #                 logger.error(f"Error parsing URL for item: {e}")
+
+        #             try:
+        #                 if 'merchant' in item and 'url' in item['merchant']:
+        #                     item['merchant']['url'] = self.fix_url(item['merchant']['url'])
+        #             except Exception as e:
+        #                 logger.error(f"Error parsing URL for item: {e}")
+
+        #             shopping_data.append(item)
+
+        #             product_id = item.get('product_id')
+        #             if product_id is None or product_id == "":
+        #                 logger.error(f"Invalid product_id: {product_id}")
+        #                 continue
+
+        #             search_history_entries.append(
+        #                 search_history(
+        #                     query=query,
+        #                     product_id=product_id,
+        #                     google_url=item['url'],
+        #                     seller_name=item['merchant']['name'],
+        #                     seller_url=item['merchant']['url'],
+        #                     price=item['price'],
+        #                     product_title=item['title'],
+        #                     delivery=item['delivery'],
+        #                     currency=item['currency'],
+        #                     rating=item.get('rating'),
+        #                     reviews_count=item.get('reviews_count'),
+        #                     product_pic=item.get('thumbnail')
+        #                 )
+        #             )
+
+        #     logger.info(f"Total search_history entries to create: {len(search_history_entries)}")
+
+        #     with transaction.atomic():
+        #         try:
+        #             search_history.objects.bulk_create(search_history_entries, ignore_conflicts=True)
+        #         except Exception as e:
+        #             logger.error(f"Error creating search_history entries: {e}")
+
+        #     logger.info(f"Total products fetched: {len(shopping_data)}")
+            
+        #     return Response({'Message': 'Fetched the Product data Successfully', "Product_data": shopping_data, "Last Page": last_page_number, "Current Page":current_page_number}, status=status.HTTP_200_OK)
+
+        # except Exception as e:
+        #     return Response({'Message': f'Failed to Fetch the Product data : {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
 
     @staticmethod
     def fix_url(encoded_url):
