@@ -113,6 +113,13 @@ urlpatterns = [
 
     path('api/suggestion-api/', SuggestionAPIView.as_view(), name ="api-SuggestionAPIView"),
 
+    path('api/get-all-urls/', GetAllURLs.as_view(), name ="api-GetAllURLs"),
+
+    path('api/edit-url/', EditURL.as_view(), name ="api-EditURL"),
+
+    path('api/delete-url/', DeleteURL.as_view(), name ="api-DeleteURL"),
+
+    path('api/add-url-list/', add_to_URL_List.as_view(), name ="api-add_to_URL_List"),
 
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),

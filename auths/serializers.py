@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import CustomUser, search_history
+from .models import CustomUser, search_history, URL_List
 import random, string
 # from django.contrib.postgres.fields import JSONField
 def generate_random_string(length=15):
@@ -142,3 +142,8 @@ class historySerializer(serializers.ModelSerializer):
         fields = (
                   '__all__'
               )
+        
+class URLListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = URL_List
+        fields = ['id', 'name']

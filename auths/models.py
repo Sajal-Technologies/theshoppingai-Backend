@@ -167,6 +167,11 @@ class prodid_mapping(TimeStampModel):
     delivery = models.CharField(max_length=250,null=True,blank=True)
     product_image = models.URLField(null=True,blank=True)
 
+class URL_List(TimeStampModel):
+    name = models.CharField(max_length=255, unique=True)
+    
+    def __str__(self):
+        return self.name
     
 #-----------------------------------------------------Code BY Adil-------------------------------------------------------------
 

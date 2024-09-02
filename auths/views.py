@@ -7,7 +7,7 @@ from .email import send_otp_via_email
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from .utils import generate_random_string, get_user_id_from_token
-from .serializers import historySerializer, UserChangePasswordSerializer, UserLoginSerializer, UserProfileSerializer, UserRegistrationSerializer, UserChangePasswordSerializer, UserModifyPasswordSerializer
+from .serializers import historySerializer, URLListSerializer, UserChangePasswordSerializer, UserLoginSerializer, UserProfileSerializer, UserRegistrationSerializer, UserChangePasswordSerializer, UserModifyPasswordSerializer
 from rest_framework.permissions import BasePermission, IsAuthenticated, AllowAny
 from .renderers import UserRenderer
 from django.views import View
@@ -1295,33 +1295,40 @@ class OxylabProductDetailView(APIView):
                     return response.url
 
                 def filter_merchants(shopping_data):
-                    url_list = [
-                        "amazon", "flipkart", "snapdeal", "myntra", "ajio", "paytmmall", "tatacliq", 
-                        "shopclues", "pepperfry", "nykaa", "limeroad", "faballey", "zivame", "koovs", 
-                        "clovia", "biba", "wforwoman", "bewakoof", "urbanladder", "croma", "reliancedigital", 
-                        "vijaysales", "gadgets360", "poorvikamobile", "samsung", "oneplus", "mi", "dell", 
-                        "apple", "bigbasket", "blinkit", "jiomart", "dunzo", "spencers", "naturesbasket", 
-                        "zopnow", "shop", "starquik", "fabindia", "hometown", "woodenstreet", "thedecorkart", 
-                        "chumbak", "livspace", "thesleepcompany", "firstcry", "healthkart", "netmeds", 
-                        "1mg", "lenskart", "tanishq", "bluestone", "caratlane", "purplle", "crossword", 
-                        "sapnaonline", "booksadda", "bookchor", "a1books", "scholastic", "headsupfortails", 
-                        "petsworld", "dogspot", "petshop18", "pawsindia", "marshallspetzone", "petsglam", 
-                        "petsy", "petnest", "justdogsstore", "infibeam", "shoppersstop", "craftsvilla", 
-                        "naaptol", "saholic", "homeshop18", "futurebazaar", "ritukumar", "thelabellife", 
-                        "andindia", "globaldesi", "sutastore", "nykaafashion", "jaypore", "amantelingerie", 
-                        "happimobiles", "electronicscomp", "jio", "unboxindia", "gadgetbridge", "vlebazaar", 
-                        "dmart", "supermart", "reliancefresh", "houseofpataudi", "ikea", "zarahome", 
-                        "indigoliving", "goodearth", "westside", "godrejinterio", "fabfurnish", "pcjeweller", 
-                        "kalyanjewellers", "candere", "voylla", "orra", "sencogoldanddiamonds", "bookishsanta", 
-                        "pustakmandi", "wordery", "starmark", "bargainbooks", "bookdepository", "worldofbooks", 
-                        "bookswagon", "kitabay", "pupkart", "whiskas", "petshop", "barksandmeows", 
-                        "petophilia", "waggle", "themancompany", "beardo", "mamaearth", "plumgoodness", 
-                        "buywow", "ustraa", "myglamm", "bombayshavingcompany", "khadinatural", "zomato", 
-                        "swiggy", "freshmenu", "box8", "faasos", "dineout", "rebelfoods", "behrouzbiryani", 
-                        "dominos", "pizzahut", "makemytrip", "goibibo", "yatra", "cleartrip", "oyorooms", 
-                        "airbnb", "trivago", "booking", "agoda", "expedia", "urbanclap", "housejoy", 
-                        "jeeves", "onsitego", "homecentre", "rentomojo", "furlenco", "nestaway", "tata"
-                    ]
+                    # url_list = [
+                    #     "amazon", "flipkart", "snapdeal", "myntra", "ajio", "paytmmall", "tatacliq", 
+                    #     "shopclues", "pepperfry", "nykaa", "limeroad", "faballey", "zivame", "koovs", 
+                    #     "clovia", "biba", "wforwoman", "bewakoof", "urbanladder", "croma", "reliancedigital", 
+                    #     "vijaysales", "gadgets360", "poorvikamobile", "samsung", "oneplus", "mi", "dell", 
+                    #     "apple", "bigbasket", "blinkit", "jiomart", "dunzo", "spencers", "naturesbasket", 
+                    #     "zopnow", "shop", "starquik", "fabindia", "hometown", "woodenstreet", "thedecorkart", 
+                    #     "chumbak", "livspace", "thesleepcompany", "firstcry", "healthkart", "netmeds", 
+                    #     "1mg", "lenskart", "tanishq", "bluestone", "caratlane", "purplle", "crossword", 
+                    #     "sapnaonline", "booksadda", "bookchor", "a1books", "scholastic", "headsupfortails", 
+                    #     "petsworld", "dogspot", "petshop18", "pawsindia", "marshallspetzone", "petsglam", 
+                    #     "petsy", "petnest", "justdogsstore", "infibeam", "shoppersstop", "craftsvilla", 
+                    #     "naaptol", "saholic", "homeshop18", "futurebazaar", "ritukumar", "thelabellife", 
+                    #     "andindia", "globaldesi", "sutastore", "nykaafashion", "jaypore", "amantelingerie", 
+                    #     "happimobiles", "electronicscomp", "jio", "unboxindia", "gadgetbridge", "vlebazaar", 
+                    #     "dmart", "supermart", "reliancefresh", "houseofpataudi", "ikea", "zarahome", 
+                    #     "indigoliving", "goodearth", "westside", "godrejinterio", "fabfurnish", "pcjeweller", 
+                    #     "kalyanjewellers", "candere", "voylla", "orra", "sencogoldanddiamonds", "bookishsanta", 
+                    #     "pustakmandi", "wordery", "starmark", "bargainbooks", "bookdepository", "worldofbooks", 
+                    #     "bookswagon", "kitabay", "pupkart", "whiskas", "petshop", "barksandmeows", 
+                    #     "petophilia", "waggle", "themancompany", "beardo", "mamaearth", "plumgoodness", 
+                    #     "buywow", "ustraa", "myglamm", "bombayshavingcompany", "khadinatural", "zomato", 
+                    #     "swiggy", "freshmenu", "box8", "faasos", "dineout", "rebelfoods", "behrouzbiryani", 
+                    #     "dominos", "pizzahut", "makemytrip", "goibibo", "yatra", "cleartrip", "oyorooms", 
+                    #     "airbnb", "trivago", "booking", "agoda", "expedia", "urbanclap", "housejoy", 
+                    #     "jeeves", "onsitego", "homecentre", "rentomojo", "furlenco", "nestaway", "tata"
+                    # ]
+
+                    try:
+                        urls_ = URL_List.objects.values_list('name', flat=True)
+                        url_list = list(urls_)
+                    except URL_List.DoesNotExist:
+                        print({'Message': f'Unable to Find URL List result'}) 
+                        url_list=[]
 
                     try:
                         # Remove duplicates from the URL list
@@ -2820,31 +2827,38 @@ class OxylabPageONSale(APIView):
             last_page_number = []
             current_page_number = []
             passed = []
-            url_list = [
-                "amazon", "flipkart", "snapdeal", "myntra", "ajio", "paytmmall", "tatacliq", "shopclues",
-                "pepperfry", "nykaa", "limeroad", "faballey", "zivame", "koovs", "clovia", "biba", 
-                "wforwoman", "bewakoof", "urbanladder", "croma", "reliancedigital", "vijaysales", 
-                "gadgets360", "poorvikamobile", "samsung", "oneplus", "mi", "dell", "apple", "bigbasket", 
-                "blinkit", "jiomart", "dunzo", "spencers", "naturesbasket", "zopnow", "starquik", "fabindia", 
-                "hometown", "woodenstreet", "thedecorkart", "chumbak", "livspace", "thesleepcompany", "firstcry", 
-                "healthkart", "netmeds", "1mg", "lenskart", "tanishq", "bluestone", "caratlane", "purplle", 
-                "crossword", "sapnaonline", "booksadda", "bookchor", "a1books", "scholastic", "headsupfortails", 
-                "petsworld", "dogspot", "petshop18", "pawsindia", "marshallspetzone", "petsglam", "petsy", 
-                "petnest", "justdogsstore", "infibeam", "shoppersstop", "craftsvilla", "naaptol", "saholic", 
-                "homeshop18", "futurebazaar", "ritukumar", "thelabellife", "andindia", "globaldesi", "sutastore", 
-                "nykaafashion", "jaypore", "amantelingerie", "happimobiles", "electronicscomp", "jio", 
-                "unboxindia", "gadgetbridge", "vlebazaar", "dmart", "supermart", "moreretail", "easyday", 
-                "reliancefresh", "houseofpataudi", "ikea", "zarahome", "indigoliving", "goodearth", "westside", 
-                "godrejinterio", "fabfurnish", "limeroad", "pcjeweller", "kalyanjewellers", "candere", "voylla", 
-                "orra", "sencogoldanddiamonds", "bookishsanta", "pustakmandi", "wordery", "starmark", 
-                "bargainbooks", "bookdepository", "worldofbooks", "bookswagon", "kitabay", "pupkart", 
-                "whiskas", "barksandmeows", "petophilia", "waggle", "themancompany", "beardo", "mamaearth", 
-                "plumgoodness", "buywow", "ustraa", "myglamm", "bombayshavingcompany", "khadinatural", 
-                "zomato", "swiggy", "freshmenu", "box8", "faasos", "dineout", "rebelfoods", "behrouzbiryani", 
-                "dominos", "pizzahut", "makemytrip", "goibibo", "yatra", "cleartrip", "oyorooms", "airbnb", 
-                "trivago", "booking", "agoda", "expedia", "urbanclap", "housejoy", "jeeves", "onsitego", 
-                "homecentre", "rentomojo", "furlenco", "nestaway", "tata"
-            ]
+            # url_list = [
+            #     "amazon", "flipkart", "snapdeal", "myntra", "ajio", "paytmmall", "tatacliq", "shopclues",
+            #     "pepperfry", "nykaa", "limeroad", "faballey", "zivame", "koovs", "clovia", "biba", 
+            #     "wforwoman", "bewakoof", "urbanladder", "croma", "reliancedigital", "vijaysales", 
+            #     "gadgets360", "poorvikamobile", "samsung", "oneplus", "mi", "dell", "apple", "bigbasket", 
+            #     "blinkit", "jiomart", "dunzo", "spencers", "naturesbasket", "zopnow", "starquik", "fabindia", 
+            #     "hometown", "woodenstreet", "thedecorkart", "chumbak", "livspace", "thesleepcompany", "firstcry", 
+            #     "healthkart", "netmeds", "1mg", "lenskart", "tanishq", "bluestone", "caratlane", "purplle", 
+            #     "crossword", "sapnaonline", "booksadda", "bookchor", "a1books", "scholastic", "headsupfortails", 
+            #     "petsworld", "dogspot", "petshop18", "pawsindia", "marshallspetzone", "petsglam", "petsy", 
+            #     "petnest", "justdogsstore", "infibeam", "shoppersstop", "craftsvilla", "naaptol", "saholic", 
+            #     "homeshop18", "futurebazaar", "ritukumar", "thelabellife", "andindia", "globaldesi", "sutastore", 
+            #     "nykaafashion", "jaypore", "amantelingerie", "happimobiles", "electronicscomp", "jio", 
+            #     "unboxindia", "gadgetbridge", "vlebazaar", "dmart", "supermart", "moreretail", "easyday", 
+            #     "reliancefresh", "houseofpataudi", "ikea", "zarahome", "indigoliving", "goodearth", "westside", 
+            #     "godrejinterio", "fabfurnish", "limeroad", "pcjeweller", "kalyanjewellers", "candere", "voylla", 
+            #     "orra", "sencogoldanddiamonds", "bookishsanta", "pustakmandi", "wordery", "starmark", 
+            #     "bargainbooks", "bookdepository", "worldofbooks", "bookswagon", "kitabay", "pupkart", 
+            #     "whiskas", "barksandmeows", "petophilia", "waggle", "themancompany", "beardo", "mamaearth", 
+            #     "plumgoodness", "buywow", "ustraa", "myglamm", "bombayshavingcompany", "khadinatural", 
+            #     "zomato", "swiggy", "freshmenu", "box8", "faasos", "dineout", "rebelfoods", "behrouzbiryani", 
+            #     "dominos", "pizzahut", "makemytrip", "goibibo", "yatra", "cleartrip", "oyorooms", "airbnb", 
+            #     "trivago", "booking", "agoda", "expedia", "urbanclap", "housejoy", "jeeves", "onsitego", 
+            #     "homecentre", "rentomojo", "furlenco", "nestaway", "tata"
+            # ]
+
+            try:
+                urls_ = URL_List.objects.values_list('name', flat=True)
+                url_list = list(urls_)
+            except URL_List.DoesNotExist:
+                print({'Message': f'Unable to Find URL List result'}) 
+                url_list=[]
             
             # Remove duplicates and convert to lowercase
             url_list = list(set([url.lower() for url in url_list]))
@@ -3152,32 +3166,39 @@ class OxylabPageSearchView(APIView):
             last_page_number = []
             current_page_number = []
             passed = []
-            url_list = [
-                "amazon", "flipkart", "snapdeal", "myntra", "ajio", "paytmmall", "tatacliq", "shopclues",
-                "pepperfry", "nykaa", "limeroad", "faballey", "zivame", "koovs", "clovia", "biba", 
-                "wforwoman", "bewakoof", "urbanladder", "croma", "reliancedigital", "vijaysales", 
-                "gadgets360", "poorvikamobile", "samsung", "oneplus", "mi", "dell", "apple", "bigbasket", 
-                "blinkit", "jiomart", "dunzo", "spencers", "naturesbasket", "zopnow", "starquik", "fabindia", 
-                "hometown", "woodenstreet", "thedecorkart", "chumbak", "livspace", "thesleepcompany", "firstcry", 
-                "healthkart", "netmeds", "1mg", "lenskart", "tanishq", "bluestone", "caratlane", "purplle", 
-                "crossword", "sapnaonline", "booksadda", "bookchor", "a1books", "scholastic", "headsupfortails", 
-                "petsworld", "dogspot", "petshop18", "pawsindia", "marshallspetzone", "petsglam", "petsy", 
-                "petnest", "justdogsstore", "infibeam", "shoppersstop", "craftsvilla", "naaptol", "saholic", 
-                "homeshop18", "futurebazaar", "ritukumar", "thelabellife", "andindia", "globaldesi", "sutastore", 
-                "nykaafashion", "jaypore", "amantelingerie", "happimobiles", "electronicscomp", "jio", 
-                "unboxindia", "gadgetbridge", "vlebazaar", "dmart", "supermart", "moreretail", "easyday", 
-                "reliancefresh", "houseofpataudi", "ikea", "zarahome", "indigoliving", "goodearth", "westside", 
-                "godrejinterio", "fabfurnish", "limeroad", "pcjeweller", "kalyanjewellers", "candere", "voylla", 
-                "orra", "sencogoldanddiamonds", "bookishsanta", "pustakmandi", "wordery", "starmark", 
-                "bargainbooks", "bookdepository", "worldofbooks", "bookswagon", "kitabay", "pupkart", 
-                "whiskas", "barksandmeows", "petophilia", "waggle", "themancompany", "beardo", "mamaearth", 
-                "plumgoodness", "buywow", "ustraa", "myglamm", "bombayshavingcompany", "khadinatural", 
-                "zomato", "swiggy", "freshmenu", "box8", "faasos", "dineout", "rebelfoods", "behrouzbiryani", 
-                "dominos", "pizzahut", "makemytrip", "goibibo", "yatra", "cleartrip", "oyorooms", "airbnb", 
-                "trivago", "booking", "agoda", "expedia", "urbanclap", "housejoy", "jeeves", "onsitego", 
-                "homecentre", "rentomojo", "furlenco", "nestaway", "tata"
-            ]
+            # url_list = [
+            #     "amazon", "flipkart", "snapdeal", "myntra", "ajio", "paytmmall", "tatacliq", "shopclues",
+            #     "pepperfry", "nykaa", "limeroad", "faballey", "zivame", "koovs", "clovia", "biba", 
+            #     "wforwoman", "bewakoof", "urbanladder", "croma", "reliancedigital", "vijaysales", 
+            #     "gadgets360", "poorvikamobile", "samsung", "oneplus", "mi", "dell", "apple", "bigbasket", 
+            #     "blinkit", "jiomart", "dunzo", "spencers", "naturesbasket", "zopnow", "starquik", "fabindia", 
+            #     "hometown", "woodenstreet", "thedecorkart", "chumbak", "livspace", "thesleepcompany", "firstcry", 
+            #     "healthkart", "netmeds", "1mg", "lenskart", "tanishq", "bluestone", "caratlane", "purplle", 
+            #     "crossword", "sapnaonline", "booksadda", "bookchor", "a1books", "scholastic", "headsupfortails", 
+            #     "petsworld", "dogspot", "petshop18", "pawsindia", "marshallspetzone", "petsglam", "petsy", 
+            #     "petnest", "justdogsstore", "infibeam", "shoppersstop", "craftsvilla", "naaptol", "saholic", 
+            #     "homeshop18", "futurebazaar", "ritukumar", "thelabellife", "andindia", "globaldesi", "sutastore", 
+            #     "nykaafashion", "jaypore", "amantelingerie", "happimobiles", "electronicscomp", "jio", 
+            #     "unboxindia", "gadgetbridge", "vlebazaar", "dmart", "supermart", "moreretail", "easyday", 
+            #     "reliancefresh", "houseofpataudi", "ikea", "zarahome", "indigoliving", "goodearth", "westside", 
+            #     "godrejinterio", "fabfurnish", "limeroad", "pcjeweller", "kalyanjewellers", "candere", "voylla", 
+            #     "orra", "sencogoldanddiamonds", "bookishsanta", "pustakmandi", "wordery", "starmark", 
+            #     "bargainbooks", "bookdepository", "worldofbooks", "bookswagon", "kitabay", "pupkart", 
+            #     "whiskas", "barksandmeows", "petophilia", "waggle", "themancompany", "beardo", "mamaearth", 
+            #     "plumgoodness", "buywow", "ustraa", "myglamm", "bombayshavingcompany", "khadinatural", 
+            #     "zomato", "swiggy", "freshmenu", "box8", "faasos", "dineout", "rebelfoods", "behrouzbiryani", 
+            #     "dominos", "pizzahut", "makemytrip", "goibibo", "yatra", "cleartrip", "oyorooms", "airbnb", 
+            #     "trivago", "booking", "agoda", "expedia", "urbanclap", "housejoy", "jeeves", "onsitego", 
+            #     "homecentre", "rentomojo", "furlenco", "nestaway", "tata"
+            # ]
             
+            try:
+                urls_ = URL_List.objects.values_list('name', flat=True)
+                url_list = list(urls_)
+            except URL_List.DoesNotExist:
+                print({'Message': f'Unable to Find URL List result'}) 
+                url_list=[]
+
             # Remove duplicates and convert to lowercase
             url_list = list(set([url.lower() for url in url_list]))
 
@@ -3679,31 +3700,38 @@ class OxylabCategoryPageView(APIView):
             last_page_number = []
             current_page_number = []
             passed = []
-            url_list = [
-                "amazon", "flipkart", "snapdeal", "myntra", "ajio", "paytmmall", "tatacliq", "shopclues",
-                "pepperfry", "nykaa", "limeroad", "faballey", "zivame", "koovs", "clovia", "biba", 
-                "wforwoman", "bewakoof", "urbanladder", "croma", "reliancedigital", "vijaysales", 
-                "gadgets360", "poorvikamobile", "samsung", "oneplus", "mi", "dell", "apple", "bigbasket", 
-                "blinkit", "jiomart", "dunzo", "spencers", "naturesbasket", "zopnow", "starquik", "fabindia", 
-                "hometown", "woodenstreet", "thedecorkart", "chumbak", "livspace", "thesleepcompany", "firstcry", 
-                "healthkart", "netmeds", "1mg", "lenskart", "tanishq", "bluestone", "caratlane", "purplle", 
-                "crossword", "sapnaonline", "booksadda", "bookchor", "a1books", "scholastic", "headsupfortails", 
-                "petsworld", "dogspot", "petshop18", "pawsindia", "marshallspetzone", "petsglam", "petsy", 
-                "petnest", "justdogsstore", "infibeam", "shoppersstop", "craftsvilla", "naaptol", "saholic", 
-                "homeshop18", "futurebazaar", "ritukumar", "thelabellife", "andindia", "globaldesi", "sutastore", 
-                "nykaafashion", "jaypore", "amantelingerie", "happimobiles", "electronicscomp", "jio", 
-                "unboxindia", "gadgetbridge", "vlebazaar", "dmart", "supermart", "moreretail", "easyday", 
-                "reliancefresh", "houseofpataudi", "ikea", "zarahome", "indigoliving", "goodearth", "westside", 
-                "godrejinterio", "fabfurnish", "limeroad", "pcjeweller", "kalyanjewellers", "candere", "voylla", 
-                "orra", "sencogoldanddiamonds", "bookishsanta", "pustakmandi", "wordery", "starmark", 
-                "bargainbooks", "bookdepository", "worldofbooks", "bookswagon", "kitabay", "pupkart", 
-                "whiskas", "barksandmeows", "petophilia", "waggle", "themancompany", "beardo", "mamaearth", 
-                "plumgoodness", "buywow", "ustraa", "myglamm", "bombayshavingcompany", "khadinatural", 
-                "zomato", "swiggy", "freshmenu", "box8", "faasos", "dineout", "rebelfoods", "behrouzbiryani", 
-                "dominos", "pizzahut", "makemytrip", "goibibo", "yatra", "cleartrip", "oyorooms", "airbnb", 
-                "trivago", "booking", "agoda", "expedia", "urbanclap", "housejoy", "jeeves", "onsitego", 
-                "homecentre", "rentomojo", "furlenco", "nestaway", "tata"
-            ]
+            # url_list = [
+            #     "amazon", "flipkart", "snapdeal", "myntra", "ajio", "paytmmall", "tatacliq", "shopclues",
+            #     "pepperfry", "nykaa", "limeroad", "faballey", "zivame", "koovs", "clovia", "biba", 
+            #     "wforwoman", "bewakoof", "urbanladder", "croma", "reliancedigital", "vijaysales", 
+            #     "gadgets360", "poorvikamobile", "samsung", "oneplus", "mi", "dell", "apple", "bigbasket", 
+            #     "blinkit", "jiomart", "dunzo", "spencers", "naturesbasket", "zopnow", "starquik", "fabindia", 
+            #     "hometown", "woodenstreet", "thedecorkart", "chumbak", "livspace", "thesleepcompany", "firstcry", 
+            #     "healthkart", "netmeds", "1mg", "lenskart", "tanishq", "bluestone", "caratlane", "purplle", 
+            #     "crossword", "sapnaonline", "booksadda", "bookchor", "a1books", "scholastic", "headsupfortails", 
+            #     "petsworld", "dogspot", "petshop18", "pawsindia", "marshallspetzone", "petsglam", "petsy", 
+            #     "petnest", "justdogsstore", "infibeam", "shoppersstop", "craftsvilla", "naaptol", "saholic", 
+            #     "homeshop18", "futurebazaar", "ritukumar", "thelabellife", "andindia", "globaldesi", "sutastore", 
+            #     "nykaafashion", "jaypore", "amantelingerie", "happimobiles", "electronicscomp", "jio", 
+            #     "unboxindia", "gadgetbridge", "vlebazaar", "dmart", "supermart", "moreretail", "easyday", 
+            #     "reliancefresh", "houseofpataudi", "ikea", "zarahome", "indigoliving", "goodearth", "westside", 
+            #     "godrejinterio", "fabfurnish", "limeroad", "pcjeweller", "kalyanjewellers", "candere", "voylla", 
+            #     "orra", "sencogoldanddiamonds", "bookishsanta", "pustakmandi", "wordery", "starmark", 
+            #     "bargainbooks", "bookdepository", "worldofbooks", "bookswagon", "kitabay", "pupkart", 
+            #     "whiskas", "barksandmeows", "petophilia", "waggle", "themancompany", "beardo", "mamaearth", 
+            #     "plumgoodness", "buywow", "ustraa", "myglamm", "bombayshavingcompany", "khadinatural", 
+            #     "zomato", "swiggy", "freshmenu", "box8", "faasos", "dineout", "rebelfoods", "behrouzbiryani", 
+            #     "dominos", "pizzahut", "makemytrip", "goibibo", "yatra", "cleartrip", "oyorooms", "airbnb", 
+            #     "trivago", "booking", "agoda", "expedia", "urbanclap", "housejoy", "jeeves", "onsitego", 
+            #     "homecentre", "rentomojo", "furlenco", "nestaway", "tata"
+            # ]
+
+            try:
+                urls_ = URL_List.objects.values_list('name', flat=True)
+                url_list = list(urls_)
+            except URL_List.DoesNotExist:
+                print({'Message': f'Unable to Find URL List result'}) 
+                url_list=[]
             
             # Remove duplicates and convert to lowercase
             url_list = list(set([url.lower() for url in url_list]))
@@ -4153,7 +4181,12 @@ class filter_out_200(APIView):
             return Response({'Message': 'Data not found'}, status=status.HTTP_404_NOT_FOUND) 
         try:
             passed= []
-            url_list = ["amazon", "flipkart", "snapdeal", "myntra", "ajio", "paytmmall", "tatacliq", "shopclues", "myntra", "pepperfry", "nykaa", "limeroad", "faballey", "zivame", "koovs", "clovia", "biba", "wforwoman", "bewakoof", "urbanladder", "croma", "reliancedigital", "vijaysales", "gadgets360", "poorvikamobile", "samsung", "oneplus", "mi", "dell", "apple", "bigbasket", "blinkit", "amazon", "jiomart", "dunzo", "spencers", "naturesbasket", "zopnow", "shop", "starquik", "urbanladder", "pepperfry", "fabindia", "hometown", "woodenstreet", "thedecorkart", "chumbak", "hometown", "livspace", "thesleepcompany", "firstcry", "healthkart", "netmeds", "1mg", "lenskart", "tanishq", "bluestone", "caratlane", "zivame", "purplle", "amazon", "flipkart", "in", "crossword", "sapnaonline", "booksadda", "bookchor", "amazon", "a1books", "scholastic", "headsupfortails", "petsworld", "dogspot", "petshop18", "pawsindia", "marshallspetzone", "petsglam", "petsy", "petnest", "justdogsstore", "infibeam", "shoppersstop", "shopping", "craftsvilla", "naaptol", "shopping", "saholic", "flipkart", "homeshop18", "futurebazaar", "ritukumar", "shoppersstop", "thelabellife", "andindia", "globaldesi", "sutastore", "nykaafashion", "jaypore", "amantelingerie", "myntra", "happimobiles", "electronicscomp", "jio", "unboxindia", "samsung", "gadgetbridge", "store", "poorvikamobile", "happimobiles", "vlebazaar", "dmart", "amazon", "naturesbasket", "supermart", "naturesbasket", "spencers", "bigbasket", "moreretail", "easyday", "reliancefresh", "houseofpataudi", "urbanladder", "ikea", "zarahome", "indigoliving", "goodearth", "westside", "godrejinterio", "fabfurnish", "pepperfry", "limeroad", "tanishq", "pcjeweller", "kalyanjewellers", "candere", "caratlane", "bluestone", "voylla", "orra", "sencogoldanddiamonds", "bookishsanta", "pustakmandi", "wordery", "starmark", "bargainbooks", "bookdepository", "worldofbooks", "crossword", "bookswagon", "kitabay", "pupkart", "whiskas", "petshop", "petsy", "headsupfortails", "petsworld", "justdogs", "barksandmeows", "petophilia", "waggle", "themancompany", "beardo", "mamaearth", "in", "plumgoodness", "buywow", "ustraa", "myglamm", "bombayshavingcompany", "khadinatural", "zomato", "swiggy", "freshmenu", "box8", "faasos", "dineout", "rebelfoods", "behrouzbiryani", "dominos", "pizzahut", "makemytrip", "goibibo", "yatra", "cleartrip", "oyorooms", "airbnb", "trivago", "booking", "agoda", "expedia", "urbanclap", "housejoy", "jeeves", "onsitego", "urbanladder", "pepperfry", "homecentre", "rentomojo", "furlenco", "nestaway", "tata"]
+            # url_list = ["amazon", "flipkart", "snapdeal", "myntra", "ajio", "paytmmall", "tatacliq", "shopclues", "myntra", "pepperfry", "nykaa", "limeroad", "faballey", "zivame", "koovs", "clovia", "biba", "wforwoman", "bewakoof", "urbanladder", "croma", "reliancedigital", "vijaysales", "gadgets360", "poorvikamobile", "samsung", "oneplus", "mi", "dell", "apple", "bigbasket", "blinkit", "amazon", "jiomart", "dunzo", "spencers", "naturesbasket", "zopnow", "shop", "starquik", "urbanladder", "pepperfry", "fabindia", "hometown", "woodenstreet", "thedecorkart", "chumbak", "hometown", "livspace", "thesleepcompany", "firstcry", "healthkart", "netmeds", "1mg", "lenskart", "tanishq", "bluestone", "caratlane", "zivame", "purplle", "amazon", "flipkart", "in", "crossword", "sapnaonline", "booksadda", "bookchor", "amazon", "a1books", "scholastic", "headsupfortails", "petsworld", "dogspot", "petshop18", "pawsindia", "marshallspetzone", "petsglam", "petsy", "petnest", "justdogsstore", "infibeam", "shoppersstop", "shopping", "craftsvilla", "naaptol", "shopping", "saholic", "flipkart", "homeshop18", "futurebazaar", "ritukumar", "shoppersstop", "thelabellife", "andindia", "globaldesi", "sutastore", "nykaafashion", "jaypore", "amantelingerie", "myntra", "happimobiles", "electronicscomp", "jio", "unboxindia", "samsung", "gadgetbridge", "store", "poorvikamobile", "happimobiles", "vlebazaar", "dmart", "amazon", "naturesbasket", "supermart", "naturesbasket", "spencers", "bigbasket", "moreretail", "easyday", "reliancefresh", "houseofpataudi", "urbanladder", "ikea", "zarahome", "indigoliving", "goodearth", "westside", "godrejinterio", "fabfurnish", "pepperfry", "limeroad", "tanishq", "pcjeweller", "kalyanjewellers", "candere", "caratlane", "bluestone", "voylla", "orra", "sencogoldanddiamonds", "bookishsanta", "pustakmandi", "wordery", "starmark", "bargainbooks", "bookdepository", "worldofbooks", "crossword", "bookswagon", "kitabay", "pupkart", "whiskas", "petshop", "petsy", "headsupfortails", "petsworld", "justdogs", "barksandmeows", "petophilia", "waggle", "themancompany", "beardo", "mamaearth", "in", "plumgoodness", "buywow", "ustraa", "myglamm", "bombayshavingcompany", "khadinatural", "zomato", "swiggy", "freshmenu", "box8", "faasos", "dineout", "rebelfoods", "behrouzbiryani", "dominos", "pizzahut", "makemytrip", "goibibo", "yatra", "cleartrip", "oyorooms", "airbnb", "trivago", "booking", "agoda", "expedia", "urbanclap", "housejoy", "jeeves", "onsitego", "urbanladder", "pepperfry", "homecentre", "rentomojo", "furlenco", "nestaway", "tata"]
+            try:
+                urls_ = URL_List.objects.values_list('name', flat=True)
+                url_list = list(urls_)
+            except URL_List.DoesNotExist:
+                return Response({'Message': f'Unable to Find URL List result'}, status=status.HTTP_404_NOT_FOUND) 
             for i in data:
                 merchant_name = i.get('merchant', {}).get('name', '')
                 url  = i.get('merchant', {}).get('url', '')
@@ -4495,3 +4528,84 @@ class SuggestionAPIView(APIView):
             return Response({"Message":"Suggestion fetched Successfully","Suggestions": tmp}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"Message":f"Error Ocuured while fetching Suggestion: {str(e)}"}, status=status.HTTP_404_NOT_FOUND)
+      
+
+class add_to_URL_List(APIView):
+    def post(self, request):
+        urls = request.data.get('url_list', [])
+        # print(urls)
+
+        # Fetch all existing URLs once
+        existing_urls = list(set(url.name.lower() for url in URL_List.objects.all()))
+        # print(existing_urls)
+        
+        # Find new URLs
+        new_urls = [url.lower() for url in urls if url.lower() not in existing_urls]
+        # print(new_urls)
+        
+        # if new_urls:
+        #     URL_List.objects.bulk_create([URL_List(name=url) for url in new_urls])
+        #     message = f'Successfully added {len(new_urls)} new URLs'
+        #     print("HI FROM HERE")
+        #     return JsonResponse({'Message': message, 'new_urls': new_urls}, status=status.HTTP_204_NO_CONTENT)
+        # else:
+        #     message = 'All URLs already exist in the list'
+        
+        #     return JsonResponse({'Message': message}, status=status.HTTP_404_NOT_FOUND)
+        
+
+        if new_urls:
+            # Avoiding integrity error by creating URLs individually
+            for url in new_urls:
+                URL_List.objects.get_or_create(name=url)
+            
+            message = f'Successfully added {len(new_urls)} new URLs'
+            return Response({'Message': message, 'new_urls': new_urls}, status=status.HTTP_201_CREATED)
+        else:
+            message = 'All URLs already exist in the list'
+            return Response({'Message': message}, status=status.HTTP_200_OK)
+    
+
+class GetAllURLs(APIView):
+    def post(self, request):
+        try:
+            urls = URL_List.objects.all()
+            serializer = URLListSerializer(urls, many=True)
+        except URL_List.DoesNotExist:
+            return Response({'Message': 'URL List not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response({"Message":"URL List fetched Successfully","URL List": serializer.data}, status=status.HTTP_200_OK)
+
+class EditURL(APIView):
+    def post(self, request):
+        try:
+            url_id = request.data.get("url_id")
+            if not url_id:
+                return Response({'Message': 'URL id not provided'}, status=status.HTTP_404_NOT_FOUND)
+            url = URL_List.objects.get(id=url_id)
+        except URL_List.DoesNotExist:
+            return Response({'Message': 'URL not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        new_name = request.data.get('name')
+        if not new_name:
+            return Response({'Message': 'New name is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        url.name = new_name
+        url.save()
+        
+        serializer = URLListSerializer(url)
+        return Response(serializer.data)
+    
+class DeleteURL(APIView):
+    def post(self, request):
+        try:
+            url_id = request.data.get("url_id")
+            if not url_id:
+                return Response({'Message': 'URL id not provided'}, status=status.HTTP_404_NOT_FOUND)
+            url = URL_List.objects.get(id=url_id)
+            name_=url.name
+            id_ = url.id
+        except URL_List.DoesNotExist:
+            return Response({'Message': 'URL not found'}, status=status.HTTP_404_NOT_FOUND)
+        url.delete()
+        return Response({'Message': 'URL deleted successfully',"id":id_,'URL':name_}, status=status.HTTP_204_NO_CONTENT)

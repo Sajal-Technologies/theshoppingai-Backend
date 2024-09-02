@@ -36,7 +36,10 @@ class category_modelAdmin(admin.ModelAdmin):
 class prodid_mappingAdmin(admin.ModelAdmin):
     list_display = ['id', 'product_id', 'seller_link']
 
+class URL_ListAdmin(admin.ModelAdmin):
+    list_display = ['id','name']
 
+admin.site.register(URL_List,URL_ListAdmin)
 admin.site.register(prodid_mapping,prodid_mappingAdmin)
 admin.site.register(category_model, category_modelAdmin)
 admin.site.register(orderhistory, orderhistoryAdmin)
