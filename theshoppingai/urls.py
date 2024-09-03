@@ -107,6 +107,10 @@ urlpatterns = [
 
     path('api/clear-search-history/', ClearSearchHistoryView.as_view(), name='api-ClearSearchHistoryView'),
 
+    path('api/get-search-history/', GetAllSearchHsitory.as_view(), name='api-GetAllSeachHsitory'),
+
+    path('api/delete-one-history/', DeleteOneHistory.as_view(), name='api-DeleteOneHistory'),
+
     path('api/get-all-catname/', GetALLCategoryList.as_view(), name='api-GetALLCategoryList'),
 
     path('api/oxy-category-with-productid/', CategoryPageWithProductIDFilter.as_view(), name='api-CategoryPageWithProductIDFilter'), 

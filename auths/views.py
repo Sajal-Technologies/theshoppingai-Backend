@@ -4223,8 +4223,17 @@ def get_200_sites(data,url_list):
             print(f"Merchant name '{merchant_name}' not found in URL list.")
 
 
+#================================================= Search History =========================================================================
+
+
 class ClearSearchHistoryView(APIView):
     def post(self, request):
+        user_id = get_user_id_from_token(request)
+        user, is_superuser = IsSuperUser(user_id)
+        if not user or not is_superuser:
+            msg = 'could not found the super user'
+            return Response({"Message": msg}, status=status.HTTP_401_UNAUTHORIZED)
+
         try:
             # Check if there are any records to delete
             if not search_history.objects.exists():
@@ -4241,6 +4250,51 @@ class ClearSearchHistoryView(APIView):
             return Response({'Message': 'All search history records have been deleted.'}, status=status.HTTP_204_NO_CONTENT)
         except Exception as e:
             return Response({'Message': f"Unable to delete Search history: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class GetAllSearchHsitory(APIView):
+    def post(self, request):
+        user_id = get_user_id_from_token(request)
+        user, is_superuser = IsSuperUser(user_id)
+        if not user or not is_superuser:
+            msg = 'could not found the super user'
+            return Response({"Message": msg}, status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            try:
+                history = search_history.objects.all().order_by('-id')
+            except search_history.DoesNotExist:
+                return Response({'Message': 'No search history records found.'}, status=status.HTTP_404_NOT_FOUND)
+
+            serialize =historySerializer(history, many=True)
+
+            return Response({"Message":"All search history records fetched Successully", "Search_history":serialize.data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'Message': 'Unable to get search history records.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+class DeleteOneHistory(APIView):
+    def post(self, request):
+        user_id = get_user_id_from_token(request)
+        user, is_superuser = IsSuperUser(user_id)
+        if not user or not is_superuser:
+            msg = 'could not found the super user'
+            return Response({"Message": msg}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        history_id = request.data.get("id")
+
+        try:
+            try:
+                history = search_history.objects.get(id=history_id)
+            except search_history.DoesNotExist:
+                return Response({'Message': 'No search history records found.'}, status=status.HTTP_404_NOT_FOUND)
+            history.delete()
+
+            return Response({"Message":"Search history records deleted Successully"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'Message': 'Unable to deleted search history records.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+#================================================= Search History =========================================================================
+
 
 class GetALLCategoryList(APIView):
     def post(self, request):
@@ -4532,6 +4586,12 @@ class SuggestionAPIView(APIView):
 
 class add_to_URL_List(APIView):
     def post(self, request):
+        user_id = get_user_id_from_token(request)
+        user, is_superuser = IsSuperUser(user_id)
+        if not user or not is_superuser:
+            msg = 'could not found the super user'
+            return Response({"Message": msg}, status=status.HTTP_401_UNAUTHORIZED)
+
         urls = request.data.get('url_list', [])
         # print(urls)
 
@@ -4542,17 +4602,6 @@ class add_to_URL_List(APIView):
         # Find new URLs
         new_urls = [url.lower() for url in urls if url.lower() not in existing_urls]
         # print(new_urls)
-        
-        # if new_urls:
-        #     URL_List.objects.bulk_create([URL_List(name=url) for url in new_urls])
-        #     message = f'Successfully added {len(new_urls)} new URLs'
-        #     print("HI FROM HERE")
-        #     return JsonResponse({'Message': message, 'new_urls': new_urls}, status=status.HTTP_204_NO_CONTENT)
-        # else:
-        #     message = 'All URLs already exist in the list'
-        
-        #     return JsonResponse({'Message': message}, status=status.HTTP_404_NOT_FOUND)
-        
 
         if new_urls:
             # Avoiding integrity error by creating URLs individually
@@ -4568,8 +4617,14 @@ class add_to_URL_List(APIView):
 
 class GetAllURLs(APIView):
     def post(self, request):
+        user_id = get_user_id_from_token(request)
+        user, is_superuser = IsSuperUser(user_id)
+        if not user or not is_superuser:
+            msg = 'could not found the super user'
+            return Response({"Message": msg}, status=status.HTTP_401_UNAUTHORIZED)
+
         try:
-            urls = URL_List.objects.all()
+            urls = URL_List.objects.all().order_by('-created')
             serializer = URLListSerializer(urls, many=True)
         except URL_List.DoesNotExist:
             return Response({'Message': 'URL List not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -4578,6 +4633,12 @@ class GetAllURLs(APIView):
 
 class EditURL(APIView):
     def post(self, request):
+        user_id = get_user_id_from_token(request)
+        user, is_superuser = IsSuperUser(user_id)
+        if not user or not is_superuser:
+            msg = 'could not found the super user'
+            return Response({"Message": msg}, status=status.HTTP_401_UNAUTHORIZED)
+
         try:
             url_id = request.data.get("url_id")
             if not url_id:
@@ -4598,6 +4659,12 @@ class EditURL(APIView):
     
 class DeleteURL(APIView):
     def post(self, request):
+        user_id = get_user_id_from_token(request)
+        user, is_superuser = IsSuperUser(user_id)
+        if not user or not is_superuser:
+            msg = 'could not found the super user'
+            return Response({"Message": msg}, status=status.HTTP_401_UNAUTHORIZED)
+
         try:
             url_id = request.data.get("url_id")
             if not url_id:
