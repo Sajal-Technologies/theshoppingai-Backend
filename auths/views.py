@@ -3489,7 +3489,7 @@ class GetFiltersView(APIView):
                     if str(j['url'].split("tbs=")[-1].split('&')[0].split(',')[-1]).startswith('merchagg'):
                         tct[j['value']] = j['url'].split("tbs=")[-1].split('&')[0].split(',')[-1].split('%')[0]
                     else:
-                        tct[j['value']] = j['url'].split("tbs=")[-1].split('&')[0].split(',')[-1]
+                        tct[j['value']] = str(j['url'].split("tbs=")[-1].split('&')[0].split(',')[-1]).replace("%7C","|")
                         
                 # Update the dct dictionary with filter_name and its corresponding tct dictionary
                 dct[filter_name] = tct
