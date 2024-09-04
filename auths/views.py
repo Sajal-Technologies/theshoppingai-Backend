@@ -3981,6 +3981,39 @@ class GetAllcategorytext(APIView):
         
 
 
+class Getcategorytextwithimage(APIView):
+    def post(self,request):
+        all_cats=[]
+        try:
+            all_cat = category_model.objects.all()
+            for cats in all_cat:
+                if cats.category_image:
+                    tmp ={
+                        "id":cats.id,
+                        "name":cats.category_name,
+                        "mapping_name":cats.mapping_name,
+                        "title":cats.title,
+                        "image":request.build_absolute_uri(cats.category_image.url),
+                        "icon":request.build_absolute_uri(cats.icon.url) if cats.icon else None,
+                        "offer_text":cats.offer_text,
+                        "text1":cats.Cat_text1,
+                        "text2":cats.Cat_text2 ,
+                    }
+                    all_cats.append(tmp)
+
+            if len(all_cats) ==0:
+                return Response({'Message': 'No Category data found'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            return Response({'Message': 'Fetched the Category data Successfully', "Category_data": all_cats}, status=status.HTTP_200_OK)
+
+        except ObjectDoesNotExist:
+            return Response({'Message': 'No Category model Exist'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'Message': f'Failed to Fetch the Category data : {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+
+
 
 
 class CreateCategoryText(APIView):
@@ -4676,3 +4709,18 @@ class DeleteURL(APIView):
             return Response({'Message': 'URL not found'}, status=status.HTTP_404_NOT_FOUND)
         url.delete()
         return Response({'Message': 'URL deleted successfully',"id":id_,'URL':name_}, status=status.HTTP_204_NO_CONTENT)
+    
+
+class SearchSuggestionsView(APIView):
+    def post(self, request):
+        keyword = request.data.get('product_name')
+        if not keyword:
+            return Response({'Message': 'Product_name not provided'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            suggestions = search_history.objects.filter(query__icontains=keyword).values_list('query', flat=True).distinct()[:10]
+            if list(suggestions) ==[]:
+                return Response({'Message': 'No Suggestions Available', 'Suggestions': list(suggestions)}, status=200)
+            return Response({'Message': 'Suggestion Fetched Succesfully', 'Suggestions': list(suggestions)}, status=200)
+        except Exception as e:
+            return Response({"Message":f"Error Ocuured while fetching Suggestion: {str(e)}"}, status=status.HTTP_404_NOT_FOUND)

@@ -99,6 +99,8 @@ urlpatterns = [
 
     path('api/get-all-category-text/', GetAllcategorytext.as_view(), name='api-GetAllcategorytext'),
 
+    path('api/get-category-text-with-image/', Getcategorytextwithimage.as_view(), name='api-Getcategorytextwithimage'),
+
     path('api/create-category-text/', CreateCategoryText.as_view(), name='api-CreateCategoryText'),
     path('api/edit-category-text/', EditCategoryText.as_view(), name='api-EditCategoryText'),
     path('api/delete-category-text/', DeleteCategoryText.as_view(), name='api-DeleteCategoryText'),
@@ -116,6 +118,8 @@ urlpatterns = [
     path('api/oxy-category-with-productid/', CategoryPageWithProductIDFilter.as_view(), name='api-CategoryPageWithProductIDFilter'), 
 
     path('api/suggestion-api/', SuggestionAPIView.as_view(), name ="api-SuggestionAPIView"),
+
+    path('api/suggestion-keyword-api/', SearchSuggestionsView.as_view(), name ="api-SuggestionAPIView"),
 
     path('api/get-all-urls/', GetAllURLs.as_view(), name ="api-GetAllURLs"),
 
