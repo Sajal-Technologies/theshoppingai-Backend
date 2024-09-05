@@ -4711,21 +4711,6 @@ class DeleteURL(APIView):
         return Response({'Message': 'URL deleted successfully',"id":id_,'URL':name_}, status=status.HTTP_204_NO_CONTENT)
     
 
-# class SearchSuggestionsView(APIView):
-#     def post(self, request):
-#         keyword = request.data.get('product_name')
-#         if not keyword:
-#             return Response({'Message': 'Product_name not provided'}, status=status.HTTP_404_NOT_FOUND)
-
-#         try:
-#             suggestions = search_history.objects.filter(query__icontains=keyword).values_list('query', flat=True).distinct()[:10]
-#             if list(suggestions) ==[]:
-#                 return Response({'Message': 'No Suggestions Available', 'Suggestions': list(suggestions)}, status=200)
-#             return Response({'Message': 'Suggestion Fetched Succesfully', 'Suggestions': list(suggestions)}, status=200)
-#         except Exception as e:
-#             return Response({"Message":f"Error Ocuured while fetching Suggestion: {str(e)}"}, status=status.HTTP_404_NOT_FOUND)
-        
-
 
 # class SearchSuggestionsView(APIView):
 #     def post(self, request):
@@ -4734,26 +4719,34 @@ class DeleteURL(APIView):
 #             return Response({'Message': 'Product_name not provided'}, status=status.HTTP_400_BAD_REQUEST)
 
 #         try:
-#             # Search for suggestions starting with the keyword first for better relevance
-#             suggestions = search_history.objects.filter(query__istartswith=keyword).values('query', 'product_title').distinct()[:5]
+#             # Get distinct search suggestions based on the keyword
+#             suggestion_keywords = search_history.objects.filter(query__istartswith=keyword).values_list('query', flat=True).distinct()[:5]
 
 #             # If no suggestions starting with keyword, fallback to icontains
-#             if not suggestions:
-#                 suggestions = search_history.objects.filter(query__icontains=keyword).values('query', 'product_title').distinct()[:5]
+#             if not suggestion_keywords:
+#                 suggestion_keywords = search_history.objects.filter(query__icontains=keyword).values_list('query', flat=True).distinct()[:10]
 
-#             if not suggestions:
-#                 return Response({'Message': 'No Suggestions Available', 'Suggestions': []}, status=200)
+#             # Get distinct product titles related to the keyword
+#             product_titles = search_history.objects.filter(query__icontains=keyword).values_list('product_title', flat=True).distinct()[:5]
 
-#             # Create a structured response with the category (like 'in Mobiles')
-#             response_data = [
-#                 {
-#                     'query': suggestion['query'],
-#                     'products': suggestion.get('product_title', 'General')  # Default category if not available
-#                 }
-#                 for suggestion in suggestions
+
+#             # Clean up product titles by removing special characters and excessive whitespace
+#             cleaned_product_titles = [
+#                 re.sub(r'\s+', ' ', re.sub(r'[^A-Za-z0-9 ]+', '', title)).strip() for title in product_titles
 #             ]
 
-#             return Response({'Message': 'Suggestions Fetched Successfully', 'Suggestions': response_data}, status=200)
+#             # If no product titles found, leave the list empty
+#             if not cleaned_product_titles:
+#                 cleaned_product_titles = []
+
+#             # Structure the response
+#             response_data = {
+#                 'Message': 'Suggestions Fetched Successfully',
+#                 'Suggestion_Keywords': list(suggestion_keywords),  # List of distinct keyword suggestions
+#                 'Product_Titles': cleaned_product_titles  # List of cleaned product titles
+#             }
+
+#             return Response(response_data, status=200)
 
 #         except Exception as e:
 #             return Response({"Message": f"Error Occurred while fetching Suggestions: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -4773,20 +4766,21 @@ class SearchSuggestionsView(APIView):
 
             # If no suggestions starting with keyword, fallback to icontains
             if not suggestion_keywords:
-                suggestion_keywords = search_history.objects.filter(query__icontains=keyword).values_list('query', flat=True).distinct()[:10]
+                suggestion_keywords = search_history.objects.filter(query__icontains=keyword).values_list('query', flat=True).distinct()[:5]
 
             # Get distinct product titles related to the keyword
             product_titles = search_history.objects.filter(query__icontains=keyword).values_list('product_title', flat=True).distinct()[:5]
 
-            # If no product titles found, leave the list empty
-            if not product_titles:
-                product_titles = []
+            # Sanitize product titles to remove unwanted characters and excess whitespace
+            sanitized_product_titles = [
+                self.clean_product_title(title) for title in product_titles
+            ]
 
             # Structure the response
             response_data = {
                 'Message': 'Suggestions Fetched Successfully',
                 'Suggestion_Keywords': list(suggestion_keywords),  # List of distinct keyword suggestions
-                'Product_Titles': list(product_titles)  # List of distinct product titles
+                'Product_Titles': sanitized_product_titles  # List of distinct sanitized product titles
             }
 
             return Response(response_data, status=200)
@@ -4794,6 +4788,13 @@ class SearchSuggestionsView(APIView):
         except Exception as e:
             return Response({"Message": f"Error Occurred while fetching Suggestions: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    def clean_product_title(self, title):
+        # Remove unwanted sequences of special characters
+        title = re.sub(r'[^\w\s\.]', '', title)  # Remove all characters except letters, numbers, periods, and spaces
+        title = re.sub(r'\s+', ' ', title)  # Replace multiple spaces with a single space
+        title = re.sub(r'\.\.+', ' ', title)  # Remove sequences of periods (e.g., ".....")
+        title = re.sub(r'\#+', ' ', title)  # Remove sequences of hash symbols (e.g., "#####")
+        return title.strip()  # Remove leading and trailing whitespace
 
 
 
