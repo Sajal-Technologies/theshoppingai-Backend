@@ -4711,16 +4711,144 @@ class DeleteURL(APIView):
         return Response({'Message': 'URL deleted successfully',"id":id_,'URL':name_}, status=status.HTTP_204_NO_CONTENT)
     
 
+# class SearchSuggestionsView(APIView):
+#     def post(self, request):
+#         keyword = request.data.get('product_name')
+#         if not keyword:
+#             return Response({'Message': 'Product_name not provided'}, status=status.HTTP_404_NOT_FOUND)
+
+#         try:
+#             suggestions = search_history.objects.filter(query__icontains=keyword).values_list('query', flat=True).distinct()[:10]
+#             if list(suggestions) ==[]:
+#                 return Response({'Message': 'No Suggestions Available', 'Suggestions': list(suggestions)}, status=200)
+#             return Response({'Message': 'Suggestion Fetched Succesfully', 'Suggestions': list(suggestions)}, status=200)
+#         except Exception as e:
+#             return Response({"Message":f"Error Ocuured while fetching Suggestion: {str(e)}"}, status=status.HTTP_404_NOT_FOUND)
+        
+
+
+# class SearchSuggestionsView(APIView):
+#     def post(self, request):
+#         keyword = request.data.get('product_name')
+#         if not keyword:
+#             return Response({'Message': 'Product_name not provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+#         try:
+#             # Search for suggestions starting with the keyword first for better relevance
+#             suggestions = search_history.objects.filter(query__istartswith=keyword).values('query', 'product_title').distinct()[:5]
+
+#             # If no suggestions starting with keyword, fallback to icontains
+#             if not suggestions:
+#                 suggestions = search_history.objects.filter(query__icontains=keyword).values('query', 'product_title').distinct()[:5]
+
+#             if not suggestions:
+#                 return Response({'Message': 'No Suggestions Available', 'Suggestions': []}, status=200)
+
+#             # Create a structured response with the category (like 'in Mobiles')
+#             response_data = [
+#                 {
+#                     'query': suggestion['query'],
+#                     'products': suggestion.get('product_title', 'General')  # Default category if not available
+#                 }
+#                 for suggestion in suggestions
+#             ]
+
+#             return Response({'Message': 'Suggestions Fetched Successfully', 'Suggestions': response_data}, status=200)
+
+#         except Exception as e:
+#             return Response({"Message": f"Error Occurred while fetching Suggestions: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
 class SearchSuggestionsView(APIView):
     def post(self, request):
         keyword = request.data.get('product_name')
         if not keyword:
-            return Response({'Message': 'Product_name not provided'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'Message': 'Product_name not provided'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            suggestions = search_history.objects.filter(query__icontains=keyword).values_list('query', flat=True).distinct()[:10]
-            if list(suggestions) ==[]:
-                return Response({'Message': 'No Suggestions Available', 'Suggestions': list(suggestions)}, status=200)
-            return Response({'Message': 'Suggestion Fetched Succesfully', 'Suggestions': list(suggestions)}, status=200)
+            # Get distinct search suggestions based on the keyword
+            suggestion_keywords = search_history.objects.filter(query__istartswith=keyword).values_list('query', flat=True).distinct()[:5]
+
+            # If no suggestions starting with keyword, fallback to icontains
+            if not suggestion_keywords:
+                suggestion_keywords = search_history.objects.filter(query__icontains=keyword).values_list('query', flat=True).distinct()[:10]
+
+            # Get distinct product titles related to the keyword
+            product_titles = search_history.objects.filter(query__icontains=keyword).values_list('product_title', flat=True).distinct()[:5]
+
+            # If no product titles found, leave the list empty
+            if not product_titles:
+                product_titles = []
+
+            # Structure the response
+            response_data = {
+                'Message': 'Suggestions Fetched Successfully',
+                'Suggestion_Keywords': list(suggestion_keywords),  # List of distinct keyword suggestions
+                'Product_Titles': list(product_titles)  # List of distinct product titles
+            }
+
+            return Response(response_data, status=200)
+
         except Exception as e:
-            return Response({"Message":f"Error Ocuured while fetching Suggestion: {str(e)}"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"Message": f"Error Occurred while fetching Suggestions: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
+
+
+# from collections import defaultdict
+
+# def group_filters(input_filters):
+#     merchagg_values = []
+#     pdtr_groups = defaultdict(list)
+#     pdtr_mapping = {}
+
+#     for filter_str in input_filters:
+#         key, values = filter_str.split(':')
+#         values_set = tuple(values.split('|'))  # Use tuple to preserve order
+
+#         if key.startswith("merchagg"):
+#             merchagg_values.extend(values_set)
+#         else:
+#             matched_group = None
+
+#             # Check if this value matches any existing group
+#             for existing_group, existing_values in pdtr_mapping.items():
+#                 if not set(values_set).isdisjoint(existing_values):
+#                     matched_group = existing_group
+#                     break
+
+#             if matched_group is not None:
+#                 # Add values to the matched group
+#                 pdtr_mapping[matched_group].update(values_set)
+#             else:
+#                 # Create a new group if no match was found
+#                 new_group = f"pdtr{len(pdtr_mapping):01}"
+#                 pdtr_mapping[new_group] = set(values_set)
+
+#     # Construct the output
+#     merchagg_str = f"merchagg:{'|'.join(sorted(merchagg_values))}"
+#     pdtr_strs = [
+#         f"{group}:{'|'.join(sorted(values)[:2]) + '!' + '!'.join(sorted(values)[2:])}"
+#         for group, values in pdtr_mapping.items()
+#     ]
+    
+#     return f"{merchagg_str},{','.join(pdtr_strs)}"
+
+# # Example input
+# input_filters = [
+#     "pdtr0:4991902|4991904",
+#     "pdtr0:4991902|4991903",
+#     "pdtr0:4991902|4991906",
+#     "pdtr0:1006814|1006818",
+#     "pdtr0:1006814|1006835",
+#     "pdtr0:1006814|1006817",
+#     "merchagg:g260367925",
+#     "merchagg:m767741351"
+# ]
+
+# output = group_filters(input_filters)
+# print(output)
