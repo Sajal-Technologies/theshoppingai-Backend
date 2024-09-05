@@ -3082,9 +3082,66 @@ class OxylabPageSearchView(APIView):
         query = request.data.get("product_name")
         ppr_min = request.data.get("ppr_min", None)
         ppr_max = request.data.get("ppr_max", None)
-        filter_all = request.data.get("filter_all", None)
+        filter_alls = request.data.get("filter_all", None)
         sort_by = request.data.get("sort_by", 'relevance')  # Default to 'relevance'
         page_number = request.data.get("page_number", 1)  # Default to 1 if not provided
+
+
+        input_filters = filter_alls.split(',')
+
+        def group_filters(input_filters):
+            merchagg_values = set()
+            pdtr_groups = defaultdict(set)
+            pdtr_mapping = {}
+            other_filters = []
+
+            for filter_str in input_filters:
+                key, values = filter_str.split(':')
+                values_set = set(values.split('|'))  # Use set to handle uniqueness
+
+                if key.startswith("merchagg"):
+                    merchagg_values.update(values_set)
+                elif key.startswith("pdtr"):
+                    matched_group = None
+
+                    # Check if this value matches any existing group
+                    for existing_group, existing_values in pdtr_mapping.items():
+                        if not values_set.isdisjoint(existing_values):
+                            matched_group = existing_group
+                            break
+
+                    if matched_group is not None:
+                        # Add values to the matched group
+                        pdtr_mapping[matched_group].update(values_set)
+                    else:
+                        # Create a new group if no match was found
+                        new_group = f"pdtr{len(pdtr_mapping)}"
+                        pdtr_mapping[new_group] = values_set
+                else:
+                    other_filters.append(filter_str)
+
+            # Construct the output
+            merchagg_str = f"merchagg:{'|'.join(sorted(merchagg_values))}"
+            pdtr_strs = [
+                f"{group}:{'|'.join(sorted(values)[:2]) + '!' + '!'.join(sorted(values)[2:])}"
+                for group, values in pdtr_mapping.items()
+            ]
+            other_strs = ','.join(other_filters)
+
+            # Combine all parts
+            result = [merchagg_str]
+            if pdtr_strs:
+                result.append(','.join(pdtr_strs))
+            if other_strs:
+                result.append(other_strs)
+            
+            return ','.join(result)
+        
+        filter_all = group_filters(input_filters)
+        
+        if str(filter_all).endswith("!"):
+            filter_all= filter_all[:-1]
+        print("THE FILTER RESULT AFTER PROCESSING IS :",filter_all)
 
         if not query:
             return Response({'Message': 'Please provide query to search'}, status=status.HTTP_400_BAD_REQUEST)
@@ -4755,10 +4812,10 @@ class DeleteURL(APIView):
 
 
 class SearchSuggestionsView(APIView):
-    def post(self, request):
+    def get(self, request):
         keyword = request.data.get('product_name')
-        if not keyword:
-            return Response({'Message': 'Product_name not provided'}, status=status.HTTP_400_BAD_REQUEST)
+        # if not keyword:
+        #     return Response({'Message': 'Product_name not provided'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             # Get distinct search suggestions based on the keyword
@@ -4769,18 +4826,18 @@ class SearchSuggestionsView(APIView):
                 suggestion_keywords = search_history.objects.filter(query__icontains=keyword).values_list('query', flat=True).distinct()[:5]
 
             # Get distinct product titles related to the keyword
-            product_titles = search_history.objects.filter(query__icontains=keyword).values_list('product_title', flat=True).distinct()[:5]
+            # product_titles = search_history.objects.filter(query__icontains=keyword).values_list('product_title', flat=True).distinct()[:5]
 
             # Sanitize product titles to remove unwanted characters and excess whitespace
-            sanitized_product_titles = [
-                self.clean_product_title(title) for title in product_titles
-            ]
+            # sanitized_product_titles = [
+            #     self.clean_product_title(title) for title in product_titles
+            # ]
 
             # Structure the response
             response_data = {
                 'Message': 'Suggestions Fetched Successfully',
-                'Suggestion_Keywords': list(suggestion_keywords),  # List of distinct keyword suggestions
-                'Product_Titles': sanitized_product_titles  # List of distinct sanitized product titles
+                'Suggestion_Keywords': list(suggestion_keywords)+["mobiles","shoes","t shirts","laptops","watches","tv","sarees"],  # List of distinct keyword suggestions
+                # 'Product_Titles': sanitized_product_titles  # List of distinct sanitized product titles
             }
 
             return Response(response_data, status=200)
@@ -4853,3 +4910,55 @@ class SearchSuggestionsView(APIView):
 
 # output = group_filters(input_filters)
 # print(output)
+
+
+
+from collections import defaultdict
+
+def group_filters(input_filters):
+    merchagg_values = set()
+    pdtr_groups = defaultdict(set)
+    pdtr_mapping = {}
+    other_filters = []
+
+    for filter_str in input_filters:
+        key, values = filter_str.split(':')
+        values_set = set(values.split('|'))  # Use set to handle uniqueness
+
+        if key.startswith("merchagg"):
+            merchagg_values.update(values_set)
+        elif key.startswith("pdtr"):
+            matched_group = None
+
+            # Check if this value matches any existing group
+            for existing_group, existing_values in pdtr_mapping.items():
+                if not values_set.isdisjoint(existing_values):
+                    matched_group = existing_group
+                    break
+
+            if matched_group is not None:
+                # Add values to the matched group
+                pdtr_mapping[matched_group].update(values_set)
+            else:
+                # Create a new group if no match was found
+                new_group = f"pdtr{len(pdtr_mapping)}"
+                pdtr_mapping[new_group] = values_set
+        else:
+            other_filters.append(filter_str)
+
+    # Construct the output
+    merchagg_str = f"merchagg:{'|'.join(sorted(merchagg_values))}"
+    pdtr_strs = [
+        f"{group}:{'|'.join(sorted(values)[:2]) + '!' + '!'.join(sorted(values)[2:])}"
+        for group, values in pdtr_mapping.items()
+    ]
+    other_strs = ','.join(other_filters)
+
+    # Combine all parts
+    result = [merchagg_str]
+    if pdtr_strs:
+        result.append(','.join(pdtr_strs))
+    if other_strs:
+        result.append(other_strs)
+    
+    return ','.join(result)
