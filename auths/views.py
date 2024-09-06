@@ -4039,27 +4039,31 @@ class GetAllcategorytext(APIView):
 
 
 class Getcategorytextwithimage(APIView):
-    def post(self,request):
+    def get(self,request):
+        cat_name = request.data.get("cat_name")
+        if not cat_name:
+            return Response({'Message': 'Category Name not found'}, status=status.HTTP_404_NOT_FOUND)
         all_cats=[]
         try:
-            all_cat = category_model.objects.all()
-            for cats in all_cat:
-                if cats.category_image:
-                    tmp ={
-                        "id":cats.id,
-                        "name":cats.category_name,
-                        "mapping_name":cats.mapping_name,
-                        "title":cats.title,
-                        "image":request.build_absolute_uri(cats.category_image.url),
-                        "icon":request.build_absolute_uri(cats.icon.url) if cats.icon else None,
-                        "offer_text":cats.offer_text,
-                        "text1":cats.Cat_text1,
-                        "text2":cats.Cat_text2 ,
-                    }
-                    all_cats.append(tmp)
+            
+            cats = category_model.objects.filter(category_name__iexact=cat_name).first()
+            if not cats:
+                return Response({'Message': 'No Category model Exist'}, status=status.HTTP_400_BAD_REQUEST)
 
-            if len(all_cats) ==0:
-                return Response({'Message': 'No Category data found'}, status=status.HTTP_400_BAD_REQUEST)
+            if not cats.category_image or not cats.category_image.url:
+                return Response({'Message': 'Given Category does not have an image'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            all_cats={
+            "id":cats.id,
+            "name":cats.category_name,
+            "mapping_name":cats.mapping_name,
+            "title":cats.title,
+            "image":request.build_absolute_uri(cats.category_image.url),
+            "icon":request.build_absolute_uri(cats.icon.url) if cats.icon else None,
+            "offer_text":cats.offer_text,
+            "text1":cats.Cat_text1,
+            "text2":cats.Cat_text2,
+            } 
             
             return Response({'Message': 'Fetched the Category data Successfully', "Category_data": all_cats}, status=status.HTTP_200_OK)
 
