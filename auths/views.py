@@ -3103,7 +3103,7 @@ class OxylabPageONSale(APIView):
 
         def get_final_url(original_url):
             try:
-                response = requests.get(original_url, allow_redirects=True, timeout=5)
+                response = requests.get(original_url, allow_redirects=True, timeout=1)
                 return response.url
             except requests.RequestException as e:
                 logger.error(f"Error resolving URL: {e}")
@@ -3345,7 +3345,7 @@ class OxylabPageSearchView(APIView):
             context.append({'key': 'tbs', 'value': f"tbm=shop&q={query_main}&tbs=mr:1,{filter_all}"})
 
         def get_final_url(original_url):
-            response = requests.get(original_url, allow_redirects=True,timeout=5)
+            response = requests.get(original_url, allow_redirects=True,timeout=1)
             return response.url
             
         def fetch_page(page_number):
@@ -3879,7 +3879,7 @@ class OxylabCategoryPageView(APIView):
             context.append({'key': 'tbs', 'value': f"tbm=shop&q={query_main}&tbs=mr:1,{filter_all}"})
 
         def get_final_url(original_url):
-            response = requests.get(original_url, allow_redirects=True,timeout=5)
+            response = requests.get(original_url, allow_redirects=True,timeout=1)
             return response.url
             
         def fetch_page(page_number):
@@ -4672,7 +4672,7 @@ class CategoryPageWithProductIDFilter(APIView):
             context.append({'key': 'tbs', 'value': f"tbm=shop&q={query_main}&tbs=mr:1,{filter_all}"})
 
         def get_final_url(original_url):
-            response = requests.get(original_url, allow_redirects=True,timeout=5)
+            response = requests.get(original_url, allow_redirects=True,timeout=1)
             return response.url
             
         def fetch_page(page_number):
