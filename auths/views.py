@@ -2731,11 +2731,332 @@ class OxylabPricingView(APIView):
 
 
 
+# class OxylabPageONSale(APIView):
+#     def post(self, request):
+#         logger = logging.getLogger(__name__)  # Get logger for this module
+
+#         # Log the incoming request details
+#         logger.info(f"Received POST request: {request.data}")
+
+#         query = request.data.get("product_name")
+#         ppr_min = request.data.get("ppr_min", None)
+#         ppr_max = request.data.get("ppr_max", None)
+#         filter_all = request.data.get("filter_all", None)
+#         sort_by = request.data.get("sort_by", 'relevance')  # Default to 'relevance'
+#         page_number = request.data.get("page_number", 1)  # Default to 1 if not provided
+
+#         if not query:
+#             return Response({'Message': 'Please provide query to search'}, status=status.HTTP_400_BAD_REQUEST)
+
+#         try:
+#             oxy_account = oxylab_account.objects.get(id=1)
+#             username = oxy_account.username
+#             password = oxy_account.password
+#         except oxylab_account.DoesNotExist:
+#             return Response({'Message': 'Error in oxylabs credential '}, status=status.HTTP_400_BAD_REQUEST)
+
+#         query_main = str(query).replace(" ", "+")
+
+#         sort_mapping = {
+#             'relevance': 'r',
+#             'low_to_high': 'p',
+#             'high_to_low': 'pd',
+#             'rating': 'rv'
+#         }
+
+#         sort_key = sort_mapping.get(sort_by, 'r')  # Default to 'relevance' if sort_by is invalid
+
+#         # Build context dynamically based on provided filters
+#         context = [{'key': 'sort_by', 'value': sort_key}]
+        
+#         if ppr_min is not None:
+#             context.append({'key': 'min_price', 'value': ppr_min})
+        
+#         if ppr_max is not None:
+#             context.append({'key': 'max_price', 'value': ppr_max})
+
+#         if filter_all is not None:
+#             context.append({'key': 'tbs', 'value': f"tbm=shop&q={query_main}&tbs=mr:1,sales:1,{filter_all}"})
+#         else:
+#             context.append({'key': 'tbs', 'value': f"tbm=shop&q={query_main}&tbs=mr:1,sales:1"})
+
+#         def get_final_url(original_url):
+#             response = requests.get(original_url, allow_redirects=True,timeout=5)
+#             return response.url
+            
+#         def fetch_page(page_number):
+#             payload = {
+#                 'source': 'google_shopping_search',
+#                 'domain': 'co.in',
+#                 'query': query_main,
+#                 "start_page": page_number,
+#                 'pages': 1,
+#                 'parse': True,
+#                 'locale': 'en',
+#                 "geo_location": "India",
+#                 'context': context,
+#             }
+#             try:
+#                 response = requests.post(
+#                     'https://realtime.oxylabs.io/v1/queries',
+#                     auth=(username, password),
+#                     json=payload,
+#                 )
+#                 response.raise_for_status()
+#                 data = response.json()
+#                 return data.get('results', [])
+#             except requests.RequestException as e:
+#                 logger.error(f"Error fetching page {page_number}: {e}")
+#                 return []
+            
+#         try:
+#             # Fetch data for the specified page
+#             results = fetch_page(page_number)
+            
+#             def generate_unique_product_id():
+#                 # Generate a UUID and take the integer representation
+#                 unique_id = uuid.uuid4().int
+                
+#                 # Convert the integer to a string and take the first 20 digits
+#                 product_id = "NA_" + str(unique_id)[:30]
+                
+#                 return product_id
+
+#             shopping_data = []
+#             search_history_entries = []
+#             last_page_number = []
+#             current_page_number = []
+#             passed = []
+            
+
+#             try:
+#                 urls_ = URL_List.objects.values_list('name', flat=True)
+#                 url_list = list(urls_)
+#             except URL_List.DoesNotExist:
+#                 print({'Message': f'Unable to Find URL List result'}) 
+#                 url_list=[]
+            
+#             # Remove duplicates and convert to lowercase
+#             url_list = list(set([url.lower() for url in url_list]))
+
+#             # Function to normalize the merchant name
+#             def normalize_name(name):
+#                 # Remove domain extensions and symbols
+#                 name = re.sub(r'\.(com|in|org|net|co)\b', '', name, flags=re.IGNORECASE)
+#                 return name.lower()
+
+#             # Normalize and filter merchants in shopping_data before processing
+#             for result in results:
+#                 organic_results = result.get('content', {}).get('results', {}).get('organic', [])
+#                 last_page_number.append(result.get('content', {})['last_visible_page'])
+#                 current_page_number.append(result.get('content', {})['page'])
+
+#                 for item in organic_results:
+#                     merchant_name = item.get('merchant', {}).get('name', '')
+#                     normalized_name = normalize_name(merchant_name)
+                    
+#                     # Filter based on normalized merchant name
+#                     if normalized_name in url_list:
+#                         passed.append(item)
+#                     else:
+#                         print(f"Merchant name '{merchant_name}' not found in URL list.")
+#                         continue  # Skip the item if merchant name is not in the list
+
+#                     try:
+#                         if 'url' in item:
+#                             item['url'] = "https://www.google.com" + item['url']
+#                     except Exception as e:
+#                         logger.error(f"Error parsing URL for item: {e}")
+
+#                     try:
+#                         if 'merchant' in item and 'url' in item['merchant']:
+#                             item['merchant']['url'] = self.fix_url(item['merchant']['url'])
+#                     except Exception as e:
+#                         logger.error(f"Error parsing URL for item: {e}")
+
+#                     try:
+#                         if 'product_id' not in item or not item['product_id']:
+#                             new_url = get_final_url(item['merchant']['url'])
+#                             seller_link = new_url
+                            
+#                             # Check if seller_link exists in prodid_mapping
+#                             existing_entry = prodid_mapping.objects.filter(seller_link=seller_link).first()
+                            
+#                             if existing_entry:
+#                                 # If entry exists, use the existing product_id
+#                                 item['product_id'] = existing_entry.product_id
+#                             else:
+#                                 # If entry does not exist, generate a new product_id and create a new entry
+#                                 item['product_id'] = generate_unique_product_id()
+#                                 prodid_mapping.objects.create(
+#                                     product_id=item['product_id'],
+#                                     seller_link=seller_link,
+#                                     price=item['price'],
+#                                     seller_name=item['merchant']['name'],
+#                                     title=item['title'],
+#                                     delivery=item['delivery'],
+#                                     product_image=item['thumbnail'],
+#                                 )
+                        
+#                     except Exception as e:
+#                         logger.error(f"Error getting product_id for item: {e}")
+                    
+
+#                     shopping_data.append(item)
+
+#                     product_id = item.get('product_id')
+#                     if product_id is None or product_id == "":
+#                         logger.error(f"Invalid product_id: {product_id}")
+#                         continue
+
+#                     search_history_entries.append(
+#                         search_history(
+#                             query=query,
+#                             product_id=product_id,
+#                             google_url=item['url'],
+#                             seller_name=item['merchant']['name'],
+#                             seller_url=item['merchant']['url'],
+#                             price=item['price'],
+#                             product_title=item['title'],
+#                             delivery=item['delivery'],
+#                             currency=item['currency'],
+#                             rating=item.get('rating'),
+#                             reviews_count=item.get('reviews_count'),
+#                             product_pic=item.get('thumbnail')
+#                         )
+#                     )
+
+#             logger.info(f"Total search_history entries to create: {len(search_history_entries)}")
+
+#             with transaction.atomic():
+#                 try:
+#                     search_history.objects.bulk_create(search_history_entries, ignore_conflicts=True)
+#                 except Exception as e:
+#                     logger.error(f"Error creating search_history entries: {e}")
+
+#             logger.info(f"Total products fetched: {len(shopping_data)}")
+
+#             return Response({'Message': 'Fetched the Product data Successfully', "Product_data": passed, "Last Page": last_page_number, "Current Page": current_page_number}, status=status.HTTP_200_OK)
+
+#         except Exception as e:
+#             return Response({'Message': f'Failed to Fetch the Product data: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+#         # def get_final_url(original_url):
+#         #     response = requests.get(original_url, allow_redirects=True,timeout=5)
+#         #     return response.url
+            
+#         # def fetch_page(page_number):
+#         #     payload = {
+#         #         'source': 'google_shopping_search',
+#         #         'domain': 'co.in',
+#         #         'query': query_main,
+#         #         "start_page": page_number,
+#         #         'pages': 1,
+#         #         'parse': True,
+#         #         'locale': 'en',
+#         #         "geo_location": "India",
+#         #         'context': context,
+#         #     }
+#         #     try:
+#         #         response = requests.post(
+#         #             'https://realtime.oxylabs.io/v1/queries',
+#         #             auth=(username, password),
+#         #             json=payload,
+#         #         )
+#         #         response.raise_for_status()
+#         #         data = response.json()
+#         #         return data.get('results', [])
+#         #     except requests.RequestException as e:
+#         #         logger.error(f"Error fetching page {page_number}: {e}")
+#         #         return []
+
+#         # try:
+
+#         #     # Fetch data for the specified page
+#         #     results = fetch_page(page_number)
+
+#         #     shopping_data = []
+#         #     search_history_entries = []
+#         #     last_page_number = []
+#         #     current_page_number = []
+#         #     for result in results:
+#         #         organic_results = result.get('content', {}).get('results', {}).get('organic', [])
+#         #         last_page_number.append(result.get('content', {})['last_visible_page'])
+#         #         current_page_number.append(result.get('content', {})['page'])
+#         #         for item in organic_results:
+#         #             try:
+#         #                 if 'url' in item:
+#         #                     item['url'] = "https://www.google.com" + item['url']
+#         #             except Exception as e:
+#         #                 logger.error(f"Error parsing URL for item: {e}")
+
+#         #             try:
+#         #                 if 'merchant' in item and 'url' in item['merchant']:
+#         #                     item['merchant']['url'] = self.fix_url(item['merchant']['url'])
+#         #             except Exception as e:
+#         #                 logger.error(f"Error parsing URL for item: {e}")
+
+#         #             shopping_data.append(item)
+
+#         #             product_id = item.get('product_id')
+#         #             if product_id is None or product_id == "":
+#         #                 logger.error(f"Invalid product_id: {product_id}")
+#         #                 continue
+
+#         #             search_history_entries.append(
+#         #                 search_history(
+#         #                     query=query,
+#         #                     product_id=product_id,
+#         #                     google_url=item['url'],
+#         #                     seller_name=item['merchant']['name'],
+#         #                     seller_url=item['merchant']['url'],
+#         #                     price=item['price'],
+#         #                     product_title=item['title'],
+#         #                     delivery=item['delivery'],
+#         #                     currency=item['currency'],
+#         #                     rating=item.get('rating'),
+#         #                     reviews_count=item.get('reviews_count'),
+#         #                     product_pic=item.get('thumbnail')
+#         #                 )
+#         #             )
+
+#         #     logger.info(f"Total search_history entries to create: {len(search_history_entries)}")
+
+#         #     with transaction.atomic():
+#         #         try:
+#         #             search_history.objects.bulk_create(search_history_entries, ignore_conflicts=True)
+#         #         except Exception as e:
+#         #             logger.error(f"Error creating search_history entries: {e}")
+
+#         #     logger.info(f"Total products fetched: {len(shopping_data)}")
+            
+#         #     return Response({'Message': 'Fetched the Product data Successfully', "Product_data": shopping_data, "Last Page": last_page_number, "Current Page":current_page_number}, status=status.HTTP_200_OK)
+
+#         # except Exception as e:
+#         #     return Response({'Message': f'Failed to Fetch the Product data : {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+#     @staticmethod
+#     def fix_url(encoded_url):
+#         parsed_url = urlparse(encoded_url)
+#         query_params = parse_qs(parsed_url.query)
+#         if 'url' in query_params:
+#             return query_params['url'][0]
+#         return encoded_url
+        
+    
+
+
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import requests
+from urllib.parse import urlparse, parse_qs
+import uuid
+import logging
+import re
+
 class OxylabPageONSale(APIView):
     def post(self, request):
         logger = logging.getLogger(__name__)  # Get logger for this module
-
-        # Log the incoming request details
         logger.info(f"Received POST request: {request.data}")
 
         query = request.data.get("product_name")
@@ -2757,6 +3078,7 @@ class OxylabPageONSale(APIView):
 
         query_main = str(query).replace(" ", "+")
 
+        # Mapping for sort keys
         sort_mapping = {
             'relevance': 'r',
             'low_to_high': 'p',
@@ -2764,9 +3086,8 @@ class OxylabPageONSale(APIView):
             'rating': 'rv'
         }
 
-        sort_key = sort_mapping.get(sort_by, 'r')  # Default to 'relevance' if sort_by is invalid
+        sort_key = sort_mapping.get(sort_by, 'r')  # Default to 'relevance'
 
-        # Build context dynamically based on provided filters
         context = [{'key': 'sort_by', 'value': sort_key}]
         
         if ppr_min is not None:
@@ -2781,9 +3102,13 @@ class OxylabPageONSale(APIView):
             context.append({'key': 'tbs', 'value': f"tbm=shop&q={query_main}&tbs=mr:1,sales:1"})
 
         def get_final_url(original_url):
-            response = requests.get(original_url, allow_redirects=True,timeout=5)
-            return response.url
-            
+            try:
+                response = requests.get(original_url, allow_redirects=True, timeout=5)
+                return response.url
+            except requests.RequestException as e:
+                logger.error(f"Error resolving URL: {e}")
+                return original_url
+
         def fetch_page(page_number):
             payload = {
                 'source': 'google_shopping_search',
@@ -2801,6 +3126,7 @@ class OxylabPageONSale(APIView):
                     'https://realtime.oxylabs.io/v1/queries',
                     auth=(username, password),
                     json=payload,
+                    timeout=10  # Add timeout for each request
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -2809,11 +3135,7 @@ class OxylabPageONSale(APIView):
                 logger.error(f"Error fetching page {page_number}: {e}")
                 return []
             
-        try:
-            # Fetch data for the specified page
-            results = fetch_page(page_number)
-            
-            def generate_unique_product_id():
+        def generate_unique_product_id():
                 # Generate a UUID and take the integer representation
                 unique_id = uuid.uuid4().int
                 
@@ -2821,252 +3143,98 @@ class OxylabPageONSale(APIView):
                 product_id = "NA_" + str(unique_id)[:30]
                 
                 return product_id
+        
+        # Function to normalize the merchant name
+        def normalize_name(name):
+            # Remove domain extensions and symbols
+            name = re.sub(r'\.(com|in|org|net|co)\b', '', name, flags=re.IGNORECASE)
+            return name.lower()
 
+
+        def process_results(results):
             shopping_data = []
-            search_history_entries = []
-            last_page_number = []
-            current_page_number = []
             passed = []
-            # url_list = [
-            #     "amazon", "flipkart", "snapdeal", "myntra", "ajio", "paytmmall", "tatacliq", "shopclues",
-            #     "pepperfry", "nykaa", "limeroad", "faballey", "zivame", "koovs", "clovia", "biba", 
-            #     "wforwoman", "bewakoof", "urbanladder", "croma", "reliancedigital", "vijaysales", 
-            #     "gadgets360", "poorvikamobile", "samsung", "oneplus", "mi", "dell", "apple", "bigbasket", 
-            #     "blinkit", "jiomart", "dunzo", "spencers", "naturesbasket", "zopnow", "starquik", "fabindia", 
-            #     "hometown", "woodenstreet", "thedecorkart", "chumbak", "livspace", "thesleepcompany", "firstcry", 
-            #     "healthkart", "netmeds", "1mg", "lenskart", "tanishq", "bluestone", "caratlane", "purplle", 
-            #     "crossword", "sapnaonline", "booksadda", "bookchor", "a1books", "scholastic", "headsupfortails", 
-            #     "petsworld", "dogspot", "petshop18", "pawsindia", "marshallspetzone", "petsglam", "petsy", 
-            #     "petnest", "justdogsstore", "infibeam", "shoppersstop", "craftsvilla", "naaptol", "saholic", 
-            #     "homeshop18", "futurebazaar", "ritukumar", "thelabellife", "andindia", "globaldesi", "sutastore", 
-            #     "nykaafashion", "jaypore", "amantelingerie", "happimobiles", "electronicscomp", "jio", 
-            #     "unboxindia", "gadgetbridge", "vlebazaar", "dmart", "supermart", "moreretail", "easyday", 
-            #     "reliancefresh", "houseofpataudi", "ikea", "zarahome", "indigoliving", "goodearth", "westside", 
-            #     "godrejinterio", "fabfurnish", "limeroad", "pcjeweller", "kalyanjewellers", "candere", "voylla", 
-            #     "orra", "sencogoldanddiamonds", "bookishsanta", "pustakmandi", "wordery", "starmark", 
-            #     "bargainbooks", "bookdepository", "worldofbooks", "bookswagon", "kitabay", "pupkart", 
-            #     "whiskas", "barksandmeows", "petophilia", "waggle", "themancompany", "beardo", "mamaearth", 
-            #     "plumgoodness", "buywow", "ustraa", "myglamm", "bombayshavingcompany", "khadinatural", 
-            #     "zomato", "swiggy", "freshmenu", "box8", "faasos", "dineout", "rebelfoods", "behrouzbiryani", 
-            #     "dominos", "pizzahut", "makemytrip", "goibibo", "yatra", "cleartrip", "oyorooms", "airbnb", 
-            #     "trivago", "booking", "agoda", "expedia", "urbanclap", "housejoy", "jeeves", "onsitego", 
-            #     "homecentre", "rentomojo", "furlenco", "nestaway", "tata"
-            # ]
 
             try:
                 urls_ = URL_List.objects.values_list('name', flat=True)
-                url_list = list(urls_)
+                url_list = list(set([url.lower() for url in urls_]))
             except URL_List.DoesNotExist:
-                print({'Message': f'Unable to Find URL List result'}) 
-                url_list=[]
-            
-            # Remove duplicates and convert to lowercase
-            url_list = list(set([url.lower() for url in url_list]))
+                logger.error(f'Unable to find URL List result')
+                url_list = []
 
-            # Function to normalize the merchant name
-            def normalize_name(name):
-                # Remove domain extensions and symbols
-                name = re.sub(r'\.(com|in|org|net|co)\b', '', name, flags=re.IGNORECASE)
-                return name.lower()
-
-            # Normalize and filter merchants in shopping_data before processing
             for result in results:
                 organic_results = result.get('content', {}).get('results', {}).get('organic', [])
-                last_page_number.append(result.get('content', {})['last_visible_page'])
-                current_page_number.append(result.get('content', {})['page'])
 
                 for item in organic_results:
                     merchant_name = item.get('merchant', {}).get('name', '')
                     normalized_name = normalize_name(merchant_name)
-                    
-                    # Filter based on normalized merchant name
+
                     if normalized_name in url_list:
                         passed.append(item)
                     else:
-                        print(f"Merchant name '{merchant_name}' not found in URL list.")
-                        continue  # Skip the item if merchant name is not in the list
+                        continue
 
+                    # Process URLs and product IDs
                     try:
-                        if 'url' in item:
-                            item['url'] = "https://www.google.com" + item['url']
-                    except Exception as e:
-                        logger.error(f"Error parsing URL for item: {e}")
-
-                    try:
+                        item['url'] = "https://www.google.com" + item.get('url', '')
                         if 'merchant' in item and 'url' in item['merchant']:
                             item['merchant']['url'] = self.fix_url(item['merchant']['url'])
-                    except Exception as e:
-                        logger.error(f"Error parsing URL for item: {e}")
 
-                    try:
-                        if 'product_id' not in item or not item['product_id']:
-                            new_url = get_final_url(item['merchant']['url'])
-                            seller_link = new_url
-                            
-                            # Check if seller_link exists in prodid_mapping
+                        if not item.get('product_id'):
+                            seller_link = get_final_url(item['merchant']['url'])
                             existing_entry = prodid_mapping.objects.filter(seller_link=seller_link).first()
-                            
                             if existing_entry:
-                                # If entry exists, use the existing product_id
                                 item['product_id'] = existing_entry.product_id
                             else:
-                                # If entry does not exist, generate a new product_id and create a new entry
                                 item['product_id'] = generate_unique_product_id()
                                 prodid_mapping.objects.create(
                                     product_id=item['product_id'],
                                     seller_link=seller_link,
-                                    price=item['price'],
-                                    seller_name=item['merchant']['name'],
-                                    title=item['title'],
-                                    delivery=item['delivery'],
-                                    product_image=item['thumbnail'],
+                                    price=item.get('price', 0),
+                                    seller_name=item['merchant'].get('name', ''),
+                                    title=item.get('title', ''),
+                                    delivery=item.get('delivery', ''),
+                                    product_image=item.get('thumbnail', ''),
                                 )
-                        
                     except Exception as e:
-                        logger.error(f"Error getting product_id for item: {e}")
-                    
-
+                        logger.error(f"Error processing product data: {e}")
                     shopping_data.append(item)
 
-                    product_id = item.get('product_id')
-                    if product_id is None or product_id == "":
-                        logger.error(f"Invalid product_id: {product_id}")
-                        continue
+            return shopping_data, passed
 
-                    search_history_entries.append(
-                        search_history(
-                            query=query,
-                            product_id=product_id,
-                            google_url=item['url'],
-                            seller_name=item['merchant']['name'],
-                            seller_url=item['merchant']['url'],
-                            price=item['price'],
-                            product_title=item['title'],
-                            delivery=item['delivery'],
-                            currency=item['currency'],
-                            rating=item.get('rating'),
-                            reviews_count=item.get('reviews_count'),
-                            product_pic=item.get('thumbnail')
-                        )
-                    )
+        try:
+            pages_to_fetch = [page_number]  # Can extend to fetch multiple pages
 
-            logger.info(f"Total search_history entries to create: {len(search_history_entries)}")
+            shopping_data = []
+            passed_items = []
 
-            with transaction.atomic():
-                try:
-                    search_history.objects.bulk_create(search_history_entries, ignore_conflicts=True)
-                except Exception as e:
-                    logger.error(f"Error creating search_history entries: {e}")
+            # Using thread pool for concurrent fetching
+            with ThreadPoolExecutor() as executor:
+                future_to_page = {executor.submit(fetch_page, page): page for page in pages_to_fetch}
+                for future in as_completed(future_to_page):
+                    page_results = future.result()
+                    data, passed = process_results(page_results)
+                    shopping_data.extend(data)
+                    passed_items.extend(passed)
 
-            logger.info(f"Total products fetched: {len(shopping_data)}")
+            # Log the results and save to database
+            logger.info(f"Total products processed: {len(shopping_data)}")
 
-            return Response({'Message': 'Fetched the Product data Successfully', "Product_data": passed, "Last Page": last_page_number, "Current Page": current_page_number}, status=status.HTTP_200_OK)
+            return Response({
+                'Message': 'Fetched the Product data Successfully',
+                'Product_data': passed_items,
+                'Total_products': len(shopping_data)
+            }, status=status.HTTP_200_OK)
 
         except Exception as e:
+            logger.error(f"Error during product fetch: {e}")
             return Response({'Message': f'Failed to Fetch the Product data: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # def get_final_url(original_url):
-        #     response = requests.get(original_url, allow_redirects=True,timeout=5)
-        #     return response.url
-            
-        # def fetch_page(page_number):
-        #     payload = {
-        #         'source': 'google_shopping_search',
-        #         'domain': 'co.in',
-        #         'query': query_main,
-        #         "start_page": page_number,
-        #         'pages': 1,
-        #         'parse': True,
-        #         'locale': 'en',
-        #         "geo_location": "India",
-        #         'context': context,
-        #     }
-        #     try:
-        #         response = requests.post(
-        #             'https://realtime.oxylabs.io/v1/queries',
-        #             auth=(username, password),
-        #             json=payload,
-        #         )
-        #         response.raise_for_status()
-        #         data = response.json()
-        #         return data.get('results', [])
-        #     except requests.RequestException as e:
-        #         logger.error(f"Error fetching page {page_number}: {e}")
-        #         return []
-
-        # try:
-
-        #     # Fetch data for the specified page
-        #     results = fetch_page(page_number)
-
-        #     shopping_data = []
-        #     search_history_entries = []
-        #     last_page_number = []
-        #     current_page_number = []
-        #     for result in results:
-        #         organic_results = result.get('content', {}).get('results', {}).get('organic', [])
-        #         last_page_number.append(result.get('content', {})['last_visible_page'])
-        #         current_page_number.append(result.get('content', {})['page'])
-        #         for item in organic_results:
-        #             try:
-        #                 if 'url' in item:
-        #                     item['url'] = "https://www.google.com" + item['url']
-        #             except Exception as e:
-        #                 logger.error(f"Error parsing URL for item: {e}")
-
-        #             try:
-        #                 if 'merchant' in item and 'url' in item['merchant']:
-        #                     item['merchant']['url'] = self.fix_url(item['merchant']['url'])
-        #             except Exception as e:
-        #                 logger.error(f"Error parsing URL for item: {e}")
-
-        #             shopping_data.append(item)
-
-        #             product_id = item.get('product_id')
-        #             if product_id is None or product_id == "":
-        #                 logger.error(f"Invalid product_id: {product_id}")
-        #                 continue
-
-        #             search_history_entries.append(
-        #                 search_history(
-        #                     query=query,
-        #                     product_id=product_id,
-        #                     google_url=item['url'],
-        #                     seller_name=item['merchant']['name'],
-        #                     seller_url=item['merchant']['url'],
-        #                     price=item['price'],
-        #                     product_title=item['title'],
-        #                     delivery=item['delivery'],
-        #                     currency=item['currency'],
-        #                     rating=item.get('rating'),
-        #                     reviews_count=item.get('reviews_count'),
-        #                     product_pic=item.get('thumbnail')
-        #                 )
-        #             )
-
-        #     logger.info(f"Total search_history entries to create: {len(search_history_entries)}")
-
-        #     with transaction.atomic():
-        #         try:
-        #             search_history.objects.bulk_create(search_history_entries, ignore_conflicts=True)
-        #         except Exception as e:
-        #             logger.error(f"Error creating search_history entries: {e}")
-
-        #     logger.info(f"Total products fetched: {len(shopping_data)}")
-            
-        #     return Response({'Message': 'Fetched the Product data Successfully', "Product_data": shopping_data, "Last Page": last_page_number, "Current Page":current_page_number}, status=status.HTTP_200_OK)
-
-        # except Exception as e:
-        #     return Response({'Message': f'Failed to Fetch the Product data : {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
 
     @staticmethod
     def fix_url(encoded_url):
         parsed_url = urlparse(encoded_url)
         query_params = parse_qs(parsed_url.query)
-        if 'url' in query_params:
-            return query_params['url'][0]
-        return encoded_url
-    
+        return query_params.get('url', [encoded_url])[0]
 
 
 
