@@ -3978,7 +3978,7 @@ class OxylabCategoryPageView(APIView):
                     normalized_name = normalize_name(merchant_name)
                     
                     # Filter based on normalized merchant name
-                    if normalized_name in url_list:
+                    if normalized_name in url_list: # this is slowing down the whole code
                         passed.append(item)
                     else:
                         print(f"Merchant name '{merchant_name}' not found in URL list.")
@@ -4207,7 +4207,7 @@ class GetAllcategorytext(APIView):
 
 
 class Getcategorytextwithimage(APIView):
-    def get(self,request):
+    def post(self,request):
         cat_name = request.data.get("cat_name")
         if not cat_name:
             return Response({'Message': 'Category Name not found'}, status=status.HTTP_404_NOT_FOUND)
