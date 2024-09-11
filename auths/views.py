@@ -4952,7 +4952,12 @@ class SearchSuggestionsView(APIView):
     def post(self, request):
         keyword = request.data.get('product_name')
         if not keyword:
-            return Response({'Message': 'Product_name not provided'}, status=status.HTTP_400_BAD_REQUEST)
+            response_data = {
+                "Message": "Suggestions Fetched Successfully",
+                "Suggestion_Keywords": []
+            }
+            return Response(response_data, status=200)
+            # return Response({'Message': 'Product_name not provided'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             # Get distinct search suggestions based on the keyword
