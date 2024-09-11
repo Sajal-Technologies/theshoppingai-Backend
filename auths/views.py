@@ -3254,8 +3254,10 @@ class OxylabPageSearchView(APIView):
         sort_by = request.data.get("sort_by", 'relevance')  # Default to 'relevance'
         page_number = request.data.get("page_number", 1)  # Default to 1 if not provided
 
-
-        input_filters = filter_alls.split(',')
+        if filter_alls:
+            input_filters = filter_alls.split(',')
+        else:
+            input_filters =filter_alls
 
         def group_filters(input_filters):
             merchagg_values = set()
@@ -3304,12 +3306,14 @@ class OxylabPageSearchView(APIView):
                 result.append(other_strs)
             
             return ','.join(result)
-        
-        filter_all = group_filters(input_filters)
-        
-        if str(filter_all).endswith("!"):
-            filter_all= filter_all[:-1]
-        print("THE FILTER RESULT AFTER PROCESSING IS :",filter_all)
+        if filter_alls:
+            filter_all = group_filters(input_filters)
+            
+            if str(filter_all).endswith("!"):
+                filter_all= filter_all[:-1]
+            print("THE FILTER RESULT AFTER PROCESSING IS :",filter_all)
+        else:
+            filter_all = None
 
         if not query:
             return Response({'Message': 'Please provide query to search'}, status=status.HTTP_400_BAD_REQUEST)
