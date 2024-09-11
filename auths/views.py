@@ -4945,45 +4945,6 @@ class DeleteURL(APIView):
     
 
 
-# class SearchSuggestionsView(APIView):
-#     def post(self, request):
-#         keyword = request.data.get('product_name')
-#         if not keyword:
-#             return Response({'Message': 'Product_name not provided'}, status=status.HTTP_400_BAD_REQUEST)
-
-#         try:
-#             # Get distinct search suggestions based on the keyword
-#             suggestion_keywords = search_history.objects.filter(query__istartswith=keyword).values_list('query', flat=True).distinct()[:5]
-
-#             # If no suggestions starting with keyword, fallback to icontains
-#             if not suggestion_keywords:
-#                 suggestion_keywords = search_history.objects.filter(query__icontains=keyword).values_list('query', flat=True).distinct()[:10]
-
-#             # Get distinct product titles related to the keyword
-#             product_titles = search_history.objects.filter(query__icontains=keyword).values_list('product_title', flat=True).distinct()[:5]
-
-
-#             # Clean up product titles by removing special characters and excessive whitespace
-#             cleaned_product_titles = [
-#                 re.sub(r'\s+', ' ', re.sub(r'[^A-Za-z0-9 ]+', '', title)).strip() for title in product_titles
-#             ]
-
-#             # If no product titles found, leave the list empty
-#             if not cleaned_product_titles:
-#                 cleaned_product_titles = []
-
-#             # Structure the response
-#             response_data = {
-#                 'Message': 'Suggestions Fetched Successfully',
-#                 'Suggestion_Keywords': list(suggestion_keywords),  # List of distinct keyword suggestions
-#                 'Product_Titles': cleaned_product_titles  # List of cleaned product titles
-#             }
-
-#             return Response(response_data, status=200)
-
-#         except Exception as e:
-#             return Response({"Message": f"Error Occurred while fetching Suggestions: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 
 
@@ -5012,7 +4973,7 @@ class SearchSuggestionsView(APIView):
             # Structure the response
             response_data = {
                 'Message': 'Suggestions Fetched Successfully',
-                'Suggestion_Keywords': list(suggestion_keywords)+["mobiles","shoes","t shirts","laptops","watches","tv","sarees"],  # List of distinct keyword suggestions
+                'Suggestion_Keywords': list(suggestion_keywords)#+["mobiles","shoes","t shirts","laptops","watches","tv","sarees"],  # List of distinct keyword suggestions
                 # 'Product_Titles': sanitized_product_titles  # List of distinct sanitized product titles
             }
 
