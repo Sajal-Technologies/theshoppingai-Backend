@@ -4951,8 +4951,8 @@ class DeleteURL(APIView):
 class SearchSuggestionsView(APIView):
     def post(self, request):
         keyword = request.data.get('product_name')
-        # if not keyword:
-        #     return Response({'Message': 'Product_name not provided'}, status=status.HTTP_400_BAD_REQUEST)
+        if not keyword:
+            return Response({'Message': 'Product_name not provided'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             # Get distinct search suggestions based on the keyword
