@@ -4984,7 +4984,7 @@ class DeleteURL(APIView):
 
 
 class SearchSuggestionsView(APIView):
-    def get(self, request):
+    def post(self, request):
         keyword = request.data.get('product_name')
         # if not keyword:
         #     return Response({'Message': 'Product_name not provided'}, status=status.HTTP_400_BAD_REQUEST)
