@@ -26,6 +26,7 @@ from django.contrib.sessions.models import Session
 from django.core import serializers
 import re
 import uuid
+from collections import OrderedDict
 # from django.utils.http import http_date
 # Create your views here.
 
@@ -3259,53 +3260,101 @@ class OxylabPageSearchView(APIView):
         else:
             input_filters =filter_alls
 
+        # def group_filters(input_filters):
+        #     merchagg_values = set()
+        #     pdtr_groups = defaultdict(set)
+        #     pdtr_mapping = {}
+        #     other_filters = []
+
+        #     for filter_str in input_filters:
+        #         key, values = filter_str.split(':')
+        #         values_set = set(values.split('|'))  # Use set to handle uniqueness
+
+        #         if key.startswith("merchagg"):
+        #             merchagg_values.update(values_set)
+        #         elif key.startswith("pdtr"):
+        #             matched_group = None
+
+        #             # Check if this value matches any existing group
+        #             for existing_group, existing_values in pdtr_mapping.items():
+        #                 if not values_set.isdisjoint(existing_values):
+        #                     matched_group = existing_group
+        #                     break
+
+        #             if matched_group is not None:
+        #                 # Add values to the matched group
+        #                 pdtr_mapping[matched_group].update(values_set)
+        #             else:
+        #                 # Create a new group if no match was found
+        #                 new_group = f"pdtr{len(pdtr_mapping)}"
+        #                 pdtr_mapping[new_group] = values_set
+        #         else:
+        #             other_filters.append(filter_str)
+
+        #     # Construct the output
+        #     merchagg_str = f"merchagg:{'|'.join(sorted(merchagg_values))}"
+        #     pdtr_strs = [
+        #         f"{group}:{'|'.join(sorted(values)[:2]) + '!' + '!'.join(sorted(values)[2:])}"
+        #         for group, values in pdtr_mapping.items()
+        #     ]
+        #     other_strs = ','.join(other_filters)
+
+        #     # Combine all parts
+        #     if merchagg_values:
+        #         result = [merchagg_str]
+        #     else:
+        #         result = []
+        #     if pdtr_strs:
+        #         result.append(','.join(pdtr_strs))
+        #     if other_strs:
+        #         result.append(other_strs)
+            
+        #     return ','.join(result)
+
         def group_filters(input_filters):
-            merchagg_values = set()
-            pdtr_groups = defaultdict(set)
-            pdtr_mapping = {}
+            if isinstance(input_filters, str):
+                input_filters = input_filters.split(',')
+            
+            merchagg_values = OrderedDict()
+            pdtr_groups = OrderedDict()
             other_filters = []
 
             for filter_str in input_filters:
                 key, values = filter_str.split(':')
-                values_set = set(values.split('|'))  # Use set to handle uniqueness
-
+                values_list = values.split('|')
                 if key.startswith("merchagg"):
-                    merchagg_values.update(values_set)
+                    for value in values_list:
+                        merchagg_values[value] = None
                 elif key.startswith("pdtr"):
-                    matched_group = None
-
-                    # Check if this value matches any existing group
-                    for existing_group, existing_values in pdtr_mapping.items():
-                        if not values_set.isdisjoint(existing_values):
-                            matched_group = existing_group
-                            break
-
-                    if matched_group is not None:
-                        # Add values to the matched group
-                        pdtr_mapping[matched_group].update(values_set)
-                    else:
-                        # Create a new group if no match was found
-                        new_group = f"pdtr{len(pdtr_mapping)}"
-                        pdtr_mapping[new_group] = values_set
+                    first_value = values_list[0]
+                    if first_value not in pdtr_groups:
+                        pdtr_groups[first_value] = OrderedDict()
+                    for value in values_list:
+                        if value not in pdtr_groups[first_value]:
+                            pdtr_groups[first_value][value] = None
                 else:
                     other_filters.append(filter_str)
 
-            # Construct the output
-            merchagg_str = f"merchagg:{'|'.join(sorted(merchagg_values))}"
-            pdtr_strs = [
-                f"{group}:{'|'.join(sorted(values)[:2]) + '!' + '!'.join(sorted(values)[2:])}"
-                for group, values in pdtr_mapping.items()
-            ]
-            other_strs = ','.join(other_filters)
+            result = []
 
-            # Combine all parts
-            result = [merchagg_str]
-            if pdtr_strs:
-                result.append(','.join(pdtr_strs))
-            if other_strs:
-                result.append(other_strs)
-            
+            if merchagg_values:
+                result.append(f"merchagg:{'|'.join(merchagg_values.keys())}")
+
+            for i, (first_value, values) in enumerate(pdtr_groups.items()):
+                values_list = list(values.keys())
+                first_two = '|'.join(values_list[:2])
+                rest = '!'.join(values_list[2:])
+                group_str = f"pdtr{i}:{first_two}"
+                if rest:
+                    group_str += f"!{rest}"
+                result.append(group_str)
+
+            if other_filters:
+                result.append(','.join(other_filters))
+
             return ','.join(result)
+
+
         if filter_alls:
             filter_all = group_filters(input_filters)
             
@@ -3364,6 +3413,7 @@ class OxylabPageSearchView(APIView):
                 "geo_location": "India",
                 'context': context,
             }
+            print("The payload is: ",payload)
             try:
                 response = requests.post(
                     'https://realtime.oxylabs.io/v1/queries',
